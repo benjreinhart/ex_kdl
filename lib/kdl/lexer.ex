@@ -179,26 +179,13 @@ defmodule Kdl.Lexer do
   end
 
   defp lex(<<c::utf8, _::binary>> = src, ln, tks) when is_digit(c) do
-    case lex_number(src, []) do
-      {:ok, {token, src}} ->
-        lex(src, ln, [token | tks])
-
-      {:error, message} ->
-        {:error, "[line #{ln}] #{message}"}
-    end
+    lex_number(src, [], ln, tks)
   end
 
   defp lex(<<c1::utf8, c2::utf8, _::binary>> = src, ln, tks)
        when is_sign_char(c1) and is_digit(c2) do
     <<_::utf8, src::binary>> = src
-
-    case lex_number(src, [c1]) do
-      {:ok, {token, src}} ->
-        lex(src, ln, [token | tks])
-
-      {:error, message} ->
-        {:error, "[line #{ln}] #{message}"}
-    end
+    lex_number(src, [c1], ln, tks)
   end
 
   defp lex(<<"\""::utf8, src::binary>>, ln, tks) do
@@ -272,8 +259,14 @@ defmodule Kdl.Lexer do
     lex_identifier(src, [iodata | [<<c::utf8>>]])
   end
 
-  defp lex_number("" = src, iodata) do
-    {:ok, IO.iodata_to_binary(iodata), src}
+  defp lex_number(src, iodata, ln, tks) do
+    case lex_number(src, iodata) do
+      {:ok, {token, src}} ->
+        lex(src, ln, [token | tks])
+
+      {:error, message} ->
+        {:error, "[line #{ln}] #{message}"}
+    end
   end
 
   defp lex_number(<<"0b", src::binary>>, iodata) do
