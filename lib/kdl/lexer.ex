@@ -152,8 +152,8 @@ defmodule Kdl.Lexer do
   end
 
   defp lex(<<"/*", _::binary>> = src, ln, tks) do
-    case lex_multiline_comment(src, 0, []) do
-      {:ok, {comment, src}} ->
+    case lex_multiline_comment(src, 0, ln, []) do
+      {:ok, {comment, ln, src}} ->
         token = %Token.MultilineComment{value: comment}
         lex(src, ln, [token | tks])
 
@@ -202,8 +202,8 @@ defmodule Kdl.Lexer do
   end
 
   defp lex(<<"\""::utf8, src::binary>>, ln, tks) do
-    case lex_string(src, []) do
-      {:ok, {str, src}} ->
+    case lex_string(src, ln, []) do
+      {:ok, {str, ln, src}} ->
         token = %Token.String{value: str}
         lex(src, ln, [token | tks])
 
@@ -217,8 +217,8 @@ defmodule Kdl.Lexer do
 
     case count_contiguous_number_signs(rest, 0) do
       {count, <<"\"", src::binary>>} ->
-        case lex_raw_string(src, count, []) do
-          {:ok, {str, src}} ->
+        case lex_raw_string(src, count, ln, []) do
+          {:ok, {str, ln, src}} ->
             token = %Token.RawString{value: str}
             lex(src, ln, [token | tks])
 
@@ -322,111 +322,123 @@ defmodule Kdl.Lexer do
     end
   end
 
-  defp lex_string("", _iodata) do
+  defp lex_string("", _ln, _iodata) do
     {:error, "unterminated string meets end of file"}
   end
 
-  defp lex_string(<<"\"", src::binary>>, iodata) do
-    {:ok, {IO.iodata_to_binary(iodata), src}}
+  defp lex_string(<<"\"", src::binary>>, ln, iodata) do
+    {:ok, {IO.iodata_to_binary(iodata), ln, src}}
   end
 
-  defp lex_string(<<"\\n", src::binary>>, iodata) do
-    lex_string(src, [iodata | [?\n]])
+  defp lex_string(<<"\\n", src::binary>>, ln, iodata) do
+    lex_string(src, ln, [iodata | [?\n]])
   end
 
-  defp lex_string(<<"\\r", src::binary>>, iodata) do
-    lex_string(src, [iodata | [?\r]])
+  defp lex_string(<<"\\r", src::binary>>, ln, iodata) do
+    lex_string(src, ln, [iodata | [?\r]])
   end
 
-  defp lex_string(<<"\\t", src::binary>>, iodata) do
-    lex_string(src, [iodata | [?\t]])
+  defp lex_string(<<"\\t", src::binary>>, ln, iodata) do
+    lex_string(src, ln, [iodata | [?\t]])
   end
 
-  defp lex_string(<<"\\\\", src::binary>>, iodata) do
-    lex_string(src, [iodata | [?\\]])
+  defp lex_string(<<"\\\\", src::binary>>, ln, iodata) do
+    lex_string(src, ln, [iodata | [?\\]])
   end
 
-  defp lex_string(<<"\\/", src::binary>>, iodata) do
-    lex_string(src, [iodata | [?/]])
+  defp lex_string(<<"\\/", src::binary>>, ln, iodata) do
+    lex_string(src, ln, [iodata | [?/]])
   end
 
-  defp lex_string(<<"\\\"", src::binary>>, iodata) do
-    lex_string(src, [iodata | [?"]])
+  defp lex_string(<<"\\\"", src::binary>>, ln, iodata) do
+    lex_string(src, ln, [iodata | [?"]])
   end
 
-  defp lex_string(<<"\\b", src::binary>>, iodata) do
-    lex_string(src, [iodata | [?\b]])
+  defp lex_string(<<"\\b", src::binary>>, ln, iodata) do
+    lex_string(src, ln, [iodata | [?\b]])
   end
 
-  defp lex_string(<<"\\f", src::binary>>, iodata) do
-    lex_string(src, [iodata | [?\f]])
+  defp lex_string(<<"\\f", src::binary>>, ln, iodata) do
+    lex_string(src, ln, [iodata | [?\f]])
   end
 
-  defp lex_string(<<"\\u{", src::binary>>, iodata) do
+  defp lex_string(<<"\\u{", src::binary>>, ln, iodata) do
     case parse_unicode_escape(src, 0, []) do
       {:ok, {codepoint, src}} ->
-        lex_string(src, [iodata | [<<codepoint::utf8>>]])
+        lex_string(src, ln, [iodata | [<<codepoint::utf8>>]])
 
       error ->
         error
     end
   end
 
-  defp lex_string(<<"\\", _src::binary>>, _iodata) do
+  defp lex_string(<<"\\", _src::binary>>, _ln, _iodata) do
     {:error, "invalid escape in string"}
   end
 
-  defp lex_string(<<c::utf8, src::binary>>, iodata) do
-    lex_string(src, [iodata | [<<c::utf8>>]])
+  defp lex_string(<<"\n", src::binary>>, ln, iodata) do
+    lex_string(src, ln + 1, [iodata | [?\n]])
   end
 
-  defp lex_raw_string("", _number_sign_count, _iodata) do
+  defp lex_string(<<c::utf8, src::binary>>, ln, iodata) do
+    lex_string(src, ln, [iodata | [<<c::utf8>>]])
+  end
+
+  defp lex_raw_string("", _number_sign_count, _ln, _iodata) do
     {:error, "unterminated string meets end of file"}
   end
 
-  defp lex_raw_string(<<"\"", src::binary>>, 0, iodata) do
-    {:ok, {IO.iodata_to_binary(iodata), src}}
+  defp lex_raw_string(<<"\"", src::binary>>, 0, ln, iodata) do
+    {:ok, {IO.iodata_to_binary(iodata), ln, src}}
   end
 
-  defp lex_raw_string(<<"\"#", src::binary>>, 1, iodata) do
-    {:ok, {IO.iodata_to_binary(iodata), src}}
+  defp lex_raw_string(<<"\"#", src::binary>>, 1, ln, iodata) do
+    {:ok, {IO.iodata_to_binary(iodata), ln, src}}
   end
 
-  defp lex_raw_string(<<"\"#", src::binary>>, number_sign_count, iodata)
+  defp lex_raw_string(<<"\"#", src::binary>>, number_sign_count, ln, iodata)
        when number_sign_count > 1 do
     expected_count = number_sign_count - 1
 
     case count_contiguous_number_signs(src, 0) do
       {^expected_count, src} ->
-        {:ok, {IO.iodata_to_binary(iodata), src}}
+        {:ok, {IO.iodata_to_binary(iodata), ln, src}}
 
       _ ->
-        lex_raw_string(src, number_sign_count, [iodata | [?", ?#]])
+        lex_raw_string(src, number_sign_count, ln, [iodata | [?", ?#]])
     end
   end
 
-  defp lex_raw_string(<<c::utf8, src::binary>>, number_sign_count, iodata) do
-    lex_raw_string(src, number_sign_count, [iodata | [<<c::utf8>>]])
+  defp lex_raw_string(<<"\n", src::binary>>, number_sign_count, ln, iodata) do
+    lex_raw_string(src, number_sign_count, ln + 1, [iodata | [?\n]])
   end
 
-  defp lex_multiline_comment("", count, _iodata) when count > 0 do
+  defp lex_raw_string(<<c::utf8, src::binary>>, number_sign_count, ln, iodata) do
+    lex_raw_string(src, number_sign_count, ln, [iodata | [<<c::utf8>>]])
+  end
+
+  defp lex_multiline_comment("", count, _ln, _iodata) when count > 0 do
     {:error, "unterminated multiline comment"}
   end
 
-  defp lex_multiline_comment(<<"*/", src::binary>>, 1, iodata) do
-    {:ok, {IO.iodata_to_binary([iodata | ["*/"]]), src}}
+  defp lex_multiline_comment(<<"*/", src::binary>>, 1, ln, iodata) do
+    {:ok, {IO.iodata_to_binary([iodata | ["*/"]]), ln, src}}
   end
 
-  defp lex_multiline_comment(<<"*/", src::binary>>, count, iodata) when count > 1 do
-    lex_multiline_comment(src, count - 1, [iodata | ["*/"]])
+  defp lex_multiline_comment(<<"*/", src::binary>>, count, ln, iodata) when count > 1 do
+    lex_multiline_comment(src, count - 1, ln, [iodata | ["*/"]])
   end
 
-  defp lex_multiline_comment(<<"/*", src::binary>>, count, iodata) do
-    lex_multiline_comment(src, count + 1, [iodata | ["/*"]])
+  defp lex_multiline_comment(<<"/*", src::binary>>, count, ln, iodata) do
+    lex_multiline_comment(src, count + 1, ln, [iodata | ["/*"]])
   end
 
-  defp lex_multiline_comment(<<c::utf8, src::binary>>, count, iodata) do
-    lex_multiline_comment(src, count, [iodata | [<<c::utf8>>]])
+  defp lex_multiline_comment(<<"\n", src::binary>>, count, ln, iodata) do
+    lex_multiline_comment(src, count, ln + 1, [iodata | [?\n]])
+  end
+
+  defp lex_multiline_comment(<<c::utf8, src::binary>>, count, ln, iodata) do
+    lex_multiline_comment(src, count, ln, [iodata | [<<c::utf8>>]])
   end
 
   defp parse_binary("" = src, iodata) do

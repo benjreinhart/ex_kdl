@@ -344,4 +344,18 @@ defmodule Kdl.LexerTest do
     assert %Continuation{} = lex_at("node \\//comment\n10", 2)
     assert %Continuation{} = lex_at("node\\//comment\n10", 1)
   end
+
+  test "errors correctly report line number" do
+    assert {:error, "[line 2] invalid character in unicode escape"} =
+             Lexer.lex("node_1\nnode_2 \"\\u{invalid unicode escape}\" \nnode_3")
+
+    assert {:error, "[line 5] invalid number literal"} =
+             Lexer.lex("node_1 /*multi\nline\ncomment\n*/\nnode_2 0bnotnumber")
+
+    assert {:error, "[line 6] invalid number literal"} =
+             Lexer.lex("node_1 \"\nmulti\nline\nstring\n\"\nnode_2 0bnotnumber")
+
+    assert {:error, "[line 7] invalid number literal"} =
+             Lexer.lex("node_1 r\"\nmulti\nline\nraw\nstring\n\"\nnode_2 0bnotnumber")
+  end
 end
