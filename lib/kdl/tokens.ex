@@ -3,6 +3,10 @@ defmodule Kdl.Tokens do
     defstruct []
   end
 
+  defmodule Bom do
+    defstruct []
+  end
+
   defmodule Semicolon do
     defstruct []
   end

@@ -5,6 +5,7 @@ defmodule Kdl.LexerTest do
 
   alias Kdl.Tokens.{
     Eof,
+    Bom,
     LeftBrace,
     RightBrace,
     Newline,
@@ -33,6 +34,10 @@ defmodule Kdl.LexerTest do
 
   defp lex_hd(src) do
     lex_at(src, 0)
+  end
+
+  test "correctly parses BOM" do
+    assert %Bom{} = lex_hd("\u{FEFF}")
   end
 
   test "correctly parses null" do
@@ -76,8 +81,7 @@ defmodule Kdl.LexerTest do
       0x200A,
       0x202F,
       0x205F,
-      0x3000,
-      0xFEFF
+      0x3000
     ]
 
     Enum.each(other_whitespace_chars, fn char ->

@@ -25,9 +25,7 @@ defmodule Kdl.Lexer do
                    0x200A,
                    0x202F,
                    0x205F,
-                   0x3000,
-                   # BOM considered whitespace:
-                   0xFEFF
+                   0x3000
                  ]
 
   # Newline characters.
@@ -38,6 +36,8 @@ defmodule Kdl.Lexer do
   #     https://github.com/kdl-org/kdl/blob/1.0.0/SPEC.md#newline
   #
   defguardp is_newline(char) when char in [0x000A, 0x000D, 0x000C, 0x0085, 0x2028, 0x2029]
+
+  defguardp is_bom_char(char) when char == 0xFEFF
 
   # Non-identifier characters.
   #
@@ -77,7 +77,8 @@ defmodule Kdl.Lexer do
                    char < 0x21 or
                    char > 0x10FFFF or
                    is_whitespace(char) or
-                   is_newline(char)
+                   is_newline(char) or
+                   is_bom_char(char)
 
   defguardp is_identifier_char(char) when not is_non_identifier_char(char)
 
@@ -223,6 +224,11 @@ defmodule Kdl.Lexer do
 
   defp lex(<<c::utf8, _::binary>> = src, ln, tks) when is_initial_identifier_char(c) do
     lex_identifier(src, ln, tks)
+  end
+
+  defp lex(<<c::utf8, src::binary>>, ln, tks) when is_bom_char(c) do
+    token = %Tokens.Bom{}
+    lex(src, ln, [token | tks])
   end
 
   defp lex(src, ln, _tks) do
