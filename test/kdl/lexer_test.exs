@@ -294,20 +294,20 @@ defmodule Kdl.LexerTest do
   end
 
   test "correctly parses line comments" do
-    assert %LineComment{value: "// my comment"} = lex_hd("// my comment\nnode name=\"node name\"")
+    assert %LineComment{} = lex_hd("// my comment\nnode name=\"node name\"")
 
-    assert %LineComment{value: "//key=\"value\" 10"} = lex_at("node//key=\"value\" 10", 1)
+    assert %LineComment{} = lex_at("node//key=\"value\" 10", 1)
   end
 
   test "correctly parses multiline comments" do
-    assert %MultilineComment{value: "/* multiline comment */"} = lex_hd("/* multiline comment */")
+    assert %MultilineComment{} = lex_hd("/* multiline comment */")
 
     {:ok, tokens} = Lexer.lex("node /*key=\"value\" 10*/ 20")
 
     assert [
              %BareIdentifier{value: "node"},
              %Whitespace{value: " "},
-             %MultilineComment{value: "/*key=\"value\" 10*/"},
+             %MultilineComment{},
              %Whitespace{value: " "},
              %DecimalNumber{value: "20"},
              %Eof{}
@@ -319,7 +319,7 @@ defmodule Kdl.LexerTest do
              %BareIdentifier{value: "node"},
              %Whitespace{value: " "},
              %LeftBrace{},
-             %MultilineComment{value: "/*\n  /* nested */\n  /* comments */\n*/"},
+             %MultilineComment{},
              %Whitespace{value: " "},
              %Whitespace{value: " "},
              %BareIdentifier{value: "child"},

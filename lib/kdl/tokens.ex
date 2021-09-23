@@ -43,6 +43,14 @@ defmodule Kdl.Tokens do
     defstruct []
   end
 
+  defmodule LineComment do
+    defstruct []
+  end
+
+  defmodule MultilineComment do
+    defstruct []
+  end
+
   defmodule Newline do
     @enforce_keys [:value]
     defstruct [:value]
@@ -89,16 +97,6 @@ defmodule Kdl.Tokens do
   end
 
   defmodule BareIdentifier do
-    @enforce_keys [:value]
-    defstruct [:value]
-  end
-
-  defmodule LineComment do
-    @enforce_keys [:value]
-    defstruct [:value]
-  end
-
-  defmodule MultilineComment do
     @enforce_keys [:value]
     defstruct [:value]
   end

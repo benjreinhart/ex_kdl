@@ -154,20 +154,20 @@ defmodule Kdl.Lexer do
   end
 
   defp lex(<<"/*", _::binary>> = src, ln, tks) do
-    case lex_multiline_comment(src, ln, [], 0) do
-      {src, ln, comment} ->
-        token = %Tokens.MultilineComment{value: comment}
-        lex(src, ln, [token | tks])
-
+    case lex_multiline_comment(src, ln, 0) do
       {:error, message} ->
         {:error, SyntaxError.new(ln, message)}
+
+      {src, ln} ->
+        token = %Tokens.MultilineComment{}
+        lex(src, ln, [token | tks])
     end
   end
 
   defp lex(<<"//", src::binary>>, ln, tks) do
-    {src, comment} = take_until_newline(src, ["//"])
-    token = %Tokens.LineComment{value: comment}
-    lex(src, ln, [token | tks])
+    src
+    |> advance_until_newline()
+    |> lex(ln, [%Tokens.LineComment{} | tks])
   end
 
   defp lex(<<"\\", src::binary>>, ln, tks) do
@@ -417,28 +417,28 @@ defmodule Kdl.Lexer do
     lex_raw_string(src, ln, [iodata | [<<c::utf8>>]], number_sign_count)
   end
 
-  defp lex_multiline_comment("", _ln, _iodata, count) when count > 0 do
+  defp lex_multiline_comment("", _ln, count) when count > 0 do
     {:error, "unterminated multiline comment"}
   end
 
-  defp lex_multiline_comment(<<"*/", src::binary>>, ln, iodata, 1) do
-    {src, ln, IO.iodata_to_binary([iodata | ["*/"]])}
+  defp lex_multiline_comment(<<"*/", src::binary>>, ln, 1) do
+    {src, ln}
   end
 
-  defp lex_multiline_comment(<<"*/", src::binary>>, ln, iodata, count) when count > 1 do
-    lex_multiline_comment(src, ln, [iodata | ["*/"]], count - 1)
+  defp lex_multiline_comment(<<"*/", src::binary>>, ln, count) when count > 1 do
+    lex_multiline_comment(src, ln, count - 1)
   end
 
-  defp lex_multiline_comment(<<"/*", src::binary>>, ln, iodata, count) do
-    lex_multiline_comment(src, ln, [iodata | ["/*"]], count + 1)
+  defp lex_multiline_comment(<<"/*", src::binary>>, ln, count) do
+    lex_multiline_comment(src, ln, count + 1)
   end
 
-  defp lex_multiline_comment(<<"\n", src::binary>>, ln, iodata, count) do
-    lex_multiline_comment(src, ln + 1, [iodata | [?\n]], count)
+  defp lex_multiline_comment(<<"\n", src::binary>>, ln, count) do
+    lex_multiline_comment(src, ln + 1, count)
   end
 
-  defp lex_multiline_comment(<<c::utf8, src::binary>>, ln, iodata, count) do
-    lex_multiline_comment(src, ln, [iodata | [<<c::utf8>>]], count)
+  defp lex_multiline_comment(<<_::utf8, src::binary>>, ln, count) do
+    lex_multiline_comment(src, ln, count)
   end
 
   defp parse_binary("" = src, iodata) do
@@ -622,15 +622,15 @@ defmodule Kdl.Lexer do
     {count, src}
   end
 
-  defp take_until_newline("" = src, iodata) do
-    {src, IO.iodata_to_binary(iodata)}
+  defp advance_until_newline("" = src) do
+    src
   end
 
-  defp take_until_newline(<<c::utf8, _::binary>> = src, iodata) when is_newline(c) do
-    {src, IO.iodata_to_binary(iodata)}
+  defp advance_until_newline(<<c::utf8, _::binary>> = src) when is_newline(c) do
+    src
   end
 
-  defp take_until_newline(<<c::utf8, src::binary>>, iodata) do
-    take_until_newline(src, [iodata | [<<c::utf8>>]])
+  defp advance_until_newline(<<_::utf8, src::binary>>) do
+    advance_until_newline(src)
   end
 end
