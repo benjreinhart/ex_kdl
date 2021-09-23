@@ -1,4 +1,4 @@
-defmodule Kdl.Token do
+defmodule Kdl.Tokens do
   defmodule Eof do
     defstruct []
   end

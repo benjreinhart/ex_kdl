@@ -3,7 +3,7 @@ defmodule Kdl.LexerTest do
 
   alias Kdl.Lexer
 
-  alias Kdl.Token.{
+  alias Kdl.Tokens.{
     Eof,
     LeftBrace,
     RightBrace,
