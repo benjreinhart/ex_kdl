@@ -24,6 +24,8 @@ defmodule Kdl.LexerTest do
     Continuation
   }
 
+  alias Kdl.Errors.SyntaxError
+
   defp lex_at(src, at) do
     {:ok, tokens} = Lexer.lex(src)
     tokens |> Enum.at(at)
@@ -104,22 +106,31 @@ defmodule Kdl.LexerTest do
     assert %String{value: "hello\tworld"} = lex_hd("\"hello\\tworld\"")
     assert %String{value: "hello\t\"world\""} = lex_hd("\"hello\\t\\\"world\\\"\"")
 
-    assert {:error, "[line 1] invalid escape in string"} = Lexer.lex("\"hello\\kworld\"")
+    assert {:error, %SyntaxError{line: 1, message: "invalid escape in string"}} =
+             Lexer.lex("\"hello\\kworld\"")
 
     assert %String{value: "\n"} = lex_hd("\"\\u{0a}\"")
     assert %String{value: "ü"} = lex_hd("\"\\u{00FC}\"")
     assert %String{value: "􏿿"} = lex_hd("\"\\u{10FFFF}\"")
 
-    assert {:error, "[line 1] invalid character in unicode escape"} = Lexer.lex("\"\\u{tty}\"")
+    assert {:error, %SyntaxError{line: 1, message: "invalid character in unicode escape"}} =
+             Lexer.lex("\"\\u{tty}\"")
 
-    assert {:error, "[line 1] unicode escape must have at least 1 hex digit"} =
+    assert {:error,
+            %SyntaxError{line: 1, message: "unicode escape must have at least 1 hex digit"}} =
              Lexer.lex("\"\\u{}\"")
 
-    assert {:error, "[line 1] unterminated unicode escape"} = Lexer.lex("\"\\u{0a\"")
-    assert {:error, "[line 1] unterminated unicode escape"} = Lexer.lex("\"\\u{\"")
+    assert {:error, %SyntaxError{line: 1, message: "unterminated unicode escape"}} =
+             Lexer.lex("\"\\u{0a\"")
 
-    assert {:error, "[line 1] unterminated string meets end of file"} = Lexer.lex("node \"name")
-    assert {:error, "[line 1] unterminated string meets end of file"} = Lexer.lex("node \"\\u{")
+    assert {:error, %SyntaxError{line: 1, message: "unterminated unicode escape"}} =
+             Lexer.lex("\"\\u{\"")
+
+    assert {:error, %SyntaxError{line: 1, message: "unterminated string meets end of file"}} =
+             Lexer.lex("node \"name")
+
+    assert {:error, %SyntaxError{line: 1, message: "unterminated string meets end of file"}} =
+             Lexer.lex("node \"\\u{")
   end
 
   test "correctly parses raw strings" do
@@ -142,10 +153,13 @@ defmodule Kdl.LexerTest do
 
     assert %RawString{value: "hello \" \"### world"} = lex_hd("r####\"hello \" \"### world\"####")
 
-    assert {:error, "[line 1] unterminated string meets end of file"} = Lexer.lex("node r\"name")
-    assert {:error, "[line 1] unterminated string meets end of file"} = Lexer.lex("node r#\"name")
+    assert {:error, %SyntaxError{line: 1, message: "unterminated string meets end of file"}} =
+             Lexer.lex("node r\"name")
 
-    assert {:error, "[line 1] unterminated string meets end of file"} =
+    assert {:error, %SyntaxError{line: 1, message: "unterminated string meets end of file"}} =
+             Lexer.lex("node r#\"name")
+
+    assert {:error, %SyntaxError{line: 1, message: "unterminated string meets end of file"}} =
              Lexer.lex("node r##\"name\"# 10")
   end
 
@@ -165,10 +179,12 @@ defmodule Kdl.LexerTest do
     assert %BinaryNumber{value: "0b010011_"} = lex_hd("0b010011_")
     assert %BinaryNumber{value: "0b010011___"} = lex_hd("0b010011___")
 
-    assert {:error, "[line 1] invalid number literal"} = Lexer.lex("0b_010011")
-    assert {:error, "[line 1] invalid number literal"} = Lexer.lex("0b")
-    assert {:error, "[line 1] invalid number literal"} = Lexer.lex("0b5")
-    assert {:error, "[line 1] invalid number literal"} = Lexer.lex("0ba")
+    assert {:error, %SyntaxError{line: 1, message: "invalid number literal"}} =
+             Lexer.lex("0b_010011")
+
+    assert {:error, %SyntaxError{line: 1, message: "invalid number literal"}} = Lexer.lex("0b")
+    assert {:error, %SyntaxError{line: 1, message: "invalid number literal"}} = Lexer.lex("0b5")
+    assert {:error, %SyntaxError{line: 1, message: "invalid number literal"}} = Lexer.lex("0ba")
   end
 
   test "correctly parses octal" do
@@ -187,10 +203,12 @@ defmodule Kdl.LexerTest do
     assert %OctalNumber{value: "0o312467_"} = lex_hd("0o312467_")
     assert %OctalNumber{value: "0o312467___"} = lex_hd("0o312467___")
 
-    assert {:error, "[line 1] invalid number literal"} = Lexer.lex("0o_312467")
-    assert {:error, "[line 1] invalid number literal"} = Lexer.lex("0o")
-    assert {:error, "[line 1] invalid number literal"} = Lexer.lex("0o8")
-    assert {:error, "[line 1] invalid number literal"} = Lexer.lex("0oa")
+    assert {:error, %SyntaxError{line: 1, message: "invalid number literal"}} =
+             Lexer.lex("0o_312467")
+
+    assert {:error, %SyntaxError{line: 1, message: "invalid number literal"}} = Lexer.lex("0o")
+    assert {:error, %SyntaxError{line: 1, message: "invalid number literal"}} = Lexer.lex("0o8")
+    assert {:error, %SyntaxError{line: 1, message: "invalid number literal"}} = Lexer.lex("0oa")
   end
 
   test "correctly parses hexadecimal" do
@@ -211,10 +229,12 @@ defmodule Kdl.LexerTest do
     assert %HexadecimalNumber{value: "0x0A93bd8_"} = lex_hd("0x0A93bd8_")
     assert %HexadecimalNumber{value: "0x0A93bd8___"} = lex_hd("0x0A93bd8___")
 
-    assert {:error, "[line 1] invalid number literal"} = Lexer.lex("0x_0A93bd8")
-    assert {:error, "[line 1] invalid number literal"} = Lexer.lex("0x")
-    assert {:error, "[line 1] invalid number literal"} = Lexer.lex("0xG")
-    assert {:error, "[line 1] invalid number literal"} = Lexer.lex("0xg")
+    assert {:error, %SyntaxError{line: 1, message: "invalid number literal"}} =
+             Lexer.lex("0x_0A93bd8")
+
+    assert {:error, %SyntaxError{line: 1, message: "invalid number literal"}} = Lexer.lex("0x")
+    assert {:error, %SyntaxError{line: 1, message: "invalid number literal"}} = Lexer.lex("0xG")
+    assert {:error, %SyntaxError{line: 1, message: "invalid number literal"}} = Lexer.lex("0xg")
   end
 
   test "correctly parses decimal" do
@@ -256,10 +276,17 @@ defmodule Kdl.LexerTest do
     assert %DecimalNumber{value: "+124.10e-256"} = lex_hd("+124.10e-256")
     assert %DecimalNumber{value: "-124.10e-256"} = lex_hd("-124.10e-256")
 
-    assert {:error, "[line 1] invalid number literal"} = Lexer.lex("124._578")
-    assert {:error, "[line 1] invalid number literal"} = Lexer.lex("10e_256")
-    assert {:error, "[line 1] invalid number literal"} = Lexer.lex("10e-_256")
-    assert {:error, "[line 1] invalid number literal"} = Lexer.lex("10e+_256")
+    assert {:error, %SyntaxError{line: 1, message: "invalid number literal"}} =
+             Lexer.lex("124._578")
+
+    assert {:error, %SyntaxError{line: 1, message: "invalid number literal"}} =
+             Lexer.lex("10e_256")
+
+    assert {:error, %SyntaxError{line: 1, message: "invalid number literal"}} =
+             Lexer.lex("10e-_256")
+
+    assert {:error, %SyntaxError{line: 1, message: "invalid number literal"}} =
+             Lexer.lex("10e+_256")
   end
 
   test "correctly parses line comments" do
@@ -299,10 +326,10 @@ defmodule Kdl.LexerTest do
              %Eof{}
            ] = tokens
 
-    assert {:error, "[line 1] unterminated multiline comment"} =
+    assert {:error, %SyntaxError{line: 1, message: "unterminated multiline comment"}} =
              Lexer.lex("/* multiline comment ")
 
-    assert {:error, "[line 1] unterminated multiline comment"} =
+    assert {:error, %SyntaxError{line: 1, message: "unterminated multiline comment"}} =
              Lexer.lex("/* multiline /* comment */ ")
   end
 
@@ -346,16 +373,16 @@ defmodule Kdl.LexerTest do
   end
 
   test "errors correctly report line number" do
-    assert {:error, "[line 2] invalid character in unicode escape"} =
+    assert {:error, %SyntaxError{line: 2, message: "invalid character in unicode escape"}} =
              Lexer.lex("node_1\nnode_2 \"\\u{invalid unicode escape}\" \nnode_3")
 
-    assert {:error, "[line 5] invalid number literal"} =
+    assert {:error, %SyntaxError{line: 5, message: "invalid number literal"}} =
              Lexer.lex("node_1 /*multi\nline\ncomment\n*/\nnode_2 0bnotnumber")
 
-    assert {:error, "[line 6] invalid number literal"} =
+    assert {:error, %SyntaxError{line: 6, message: "invalid number literal"}} =
              Lexer.lex("node_1 \"\nmulti\nline\nstring\n\"\nnode_2 0bnotnumber")
 
-    assert {:error, "[line 7] invalid number literal"} =
+    assert {:error, %SyntaxError{line: 7, message: "invalid number literal"}} =
              Lexer.lex("node_1 r\"\nmulti\nline\nraw\nstring\n\"\nnode_2 0bnotnumber")
   end
 end

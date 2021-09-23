@@ -1,5 +1,6 @@
 defmodule Kdl.Lexer do
   alias Kdl.Token
+  alias Kdl.Errors.SyntaxError
 
   # Whitespace characters.
   #
@@ -158,7 +159,7 @@ defmodule Kdl.Lexer do
         lex(src, ln, [token | tks])
 
       {:error, message} ->
-        {:error, "[line #{ln}] #{message}"}
+        {:error, SyntaxError.new(ln, message)}
     end
   end
 
@@ -195,7 +196,7 @@ defmodule Kdl.Lexer do
         lex(src, ln, [token | tks])
 
       {:error, message} ->
-        {:error, "[line #{ln}] #{message}"}
+        {:error, SyntaxError.new(ln, message)}
     end
   end
 
@@ -210,7 +211,7 @@ defmodule Kdl.Lexer do
             lex(src, ln, [token | tks])
 
           {:error, message} ->
-            {:error, "[line #{ln}] #{message}"}
+            {:error, SyntaxError.new(ln, message)}
         end
 
       _ ->
@@ -225,7 +226,7 @@ defmodule Kdl.Lexer do
   end
 
   defp lex(src, ln, _tks) do
-    {:error, "[line #{ln}] unrecognized character '#{String.first(src)}'"}
+    {:error, SyntaxError.new(ln, "unrecognized character '#{String.first(src)}'")}
   end
 
   defp lex_identifier(src, ln, tks) do
@@ -262,7 +263,7 @@ defmodule Kdl.Lexer do
   defp lex_number(src, iodata, ln, tks) do
     case lex_number(src, iodata) do
       {:error, message} ->
-        {:error, "[line #{ln}] #{message}"}
+        {:error, SyntaxError.new(ln, message)}
 
       {src, token} ->
         lex(src, ln, [token | tks])
