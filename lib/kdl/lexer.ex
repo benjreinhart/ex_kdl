@@ -95,7 +95,7 @@ defmodule Kdl.Lexer do
 
   defguardp is_hexadecimal_digit(char) when is_digit(char) or char in ?a..?f or char in ?A..?F
 
-  @spec lex(binary()) :: {:ok, list(term())} | {:error, binary()}
+  @spec lex(binary()) :: {:ok, list(term())} | {:error, term()}
 
   def lex(encoded) when is_binary(encoded) do
     lex(encoded, 1, [])
