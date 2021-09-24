@@ -1,5 +1,5 @@
 defmodule Kdl.Lexer do
-  alias Kdl.Tokens
+  alias Kdl.Token
   alias Kdl.Errors.SyntaxError
 
   # Whitespace characters.
@@ -103,63 +103,65 @@ defmodule Kdl.Lexer do
   end
 
   defp lex("", _ln, tks) do
-    [%Tokens.Eof{} | tks]
+    [Token.new(:eof) | tks]
     |> Enum.reverse()
     |> then(&{:ok, &1})
   end
 
   defp lex(<<"\r\n", src::binary>>, ln, tks) do
-    token = %Tokens.Newline{value: "\r\n"}
+    token = Token.new(:newline, ln, "\r\n")
     lex(src, ln + 1, [token | tks])
   end
 
   defp lex(<<c::utf8, src::binary>>, ln, tks) when is_newline(c) do
-    token = %Tokens.Newline{value: <<c::utf8>>}
+    token = Token.new(:newline, ln, <<c::utf8>>)
     lex(src, ln + 1, [token | tks])
   end
 
   defp lex(<<c::utf8, src::binary>>, ln, tks) when is_whitespace(c) do
-    token = %Tokens.Whitespace{value: <<c::utf8>>}
+    token = Token.new(:whitespace, ln, <<c::utf8>>)
     lex(src, ln, [token | tks])
   end
 
   defp lex(<<";", src::binary>>, ln, tks) do
-    token = %Tokens.Semicolon{}
+    token = Token.new(:semicolon, ln)
     lex(src, ln, [token | tks])
   end
 
   defp lex(<<"{", src::binary>>, ln, tks) do
-    token = %Tokens.LeftBrace{}
+    token = Token.new(:left_brace, ln)
     lex(src, ln, [token | tks])
   end
 
   defp lex(<<"}", src::binary>>, ln, tks) do
-    token = %Tokens.RightBrace{}
+    token = Token.new(:right_brace, ln)
     lex(src, ln, [token | tks])
   end
 
   defp lex(<<"(", src::binary>>, ln, tks) do
-    token = %Tokens.LeftParen{}
+    token = Token.new(:left_paren, ln)
     lex(src, ln, [token | tks])
   end
 
   defp lex(<<")", src::binary>>, ln, tks) do
-    token = %Tokens.RightParen{}
+    token = Token.new(:right_paren, ln)
     lex(src, ln, [token | tks])
   end
 
   defp lex(<<"=", src::binary>>, ln, tks) do
-    token = %Tokens.Equals{}
+    token = Token.new(:equals, ln)
     lex(src, ln, [token | tks])
   end
 
   defp lex(<<"/*", _::binary>> = src, ln, tks) do
+    line_started_on = ln
+
     case lex_multiline_comment(src, ln, 0) do
       {:error, message} ->
         {:error, SyntaxError.new(ln, message)}
 
       {src, ln} ->
-        token = %Tokens.MultilineComment{}
+        token = Token.new(:multiline_comment, line_started_on)
         lex(src, ln, [token | tks])
     end
   end
@@ -167,16 +169,16 @@ defmodule Kdl.Lexer do
   defp lex(<<"//", src::binary>>, ln, tks) do
     src
     |> advance_until_newline()
-    |> lex(ln, [%Tokens.LineComment{} | tks])
+    |> lex(ln, [Token.new(:line_comment, ln) | tks])
   end
 
   defp lex(<<"\\", src::binary>>, ln, tks) do
-    token = %Tokens.Continuation{}
+    token = Token.new(:continuation, ln)
     lex(src, ln, [token | tks])
   end
 
   defp lex(<<"/-", src::binary>>, ln, tks) do
-    token = %Tokens.NodeComment{}
+    token = Token.new(:node_comment, ln)
     lex(src, ln, [token | tks])
   end
 
@@ -191,9 +193,11 @@ defmodule Kdl.Lexer do
   end
 
   defp lex(<<"\""::utf8, src::binary>>, ln, tks) do
+    line_started_on = ln
+
     case lex_string(src, ln, []) do
       {src, ln, str} ->
-        token = %Tokens.String{value: str}
+        token = Token.new(:string, line_started_on, str)
         lex(src, ln, [token | tks])
 
       {:error, message} ->
@@ -203,12 +207,13 @@ defmodule Kdl.Lexer do
 
   defp lex(<<"r", c::utf8, _::binary>> = src, ln, tks) when c in '#"' do
     <<_::utf8, rest::binary>> = src
+    line_started_on = ln
 
     case count_contiguous_number_signs(rest, 0) do
       {count, <<"\"", src::binary>>} ->
         case lex_raw_string(src, ln, [], count) do
           {src, ln, str} ->
-            token = %Tokens.RawString{value: str}
+            token = Token.new(:raw_string, line_started_on, str)
             lex(src, ln, [token | tks])
 
           {:error, message} ->
@@ -227,7 +232,7 @@ defmodule Kdl.Lexer do
   end
 
   defp lex(<<c::utf8, src::binary>>, ln, tks) when is_bom_char(c) do
-    token = %Tokens.Bom{}
+    token = Token.new(:bom, ln)
     lex(src, ln, [token | tks])
   end
 
@@ -239,16 +244,16 @@ defmodule Kdl.Lexer do
     {token, src} =
       case lex_identifier(src, []) do
         {"null", src} ->
-          {%Tokens.Null{}, src}
+          {Token.new(:null, ln), src}
 
         {"true", src} ->
-          {%Tokens.Boolean{value: true}, src}
+          {Token.new(:boolean, ln, true), src}
 
         {"false", src} ->
-          {%Tokens.Boolean{value: false}, src}
+          {Token.new(:boolean, ln, false), src}
 
         {identifier, src} ->
-          {%Tokens.BareIdentifier{value: identifier}, src}
+          {Token.new(:bare_identifier, ln, identifier), src}
       end
 
     lex(src, ln, [token | tks])
@@ -267,7 +272,7 @@ defmodule Kdl.Lexer do
   end
 
   defp lex_number(src, iodata, ln, tks) do
-    case lex_number(src, iodata) do
+    case lex_number(src, ln, iodata) do
       {:error, message} ->
         {:error, SyntaxError.new(ln, message)}
 
@@ -276,46 +281,46 @@ defmodule Kdl.Lexer do
     end
   end
 
-  defp lex_number(<<"0b", src::binary>>, iodata) do
+  defp lex_number(<<"0b", src::binary>>, ln, iodata) do
     case src do
       # The first character following 0b must be between 0-1
       <<c::utf8, _::binary>> when is_binary_digit(c) ->
         {number_str, src} = parse_binary(src, [iodata | ["0b"]])
-        {src, %Tokens.BinaryNumber{value: number_str}}
+        {src, Token.new(:binary_number, ln, number_str)}
 
       _ ->
         {:error, "invalid number literal"}
     end
   end
 
-  defp lex_number(<<"0o", src::binary>>, iodata) do
+  defp lex_number(<<"0o", src::binary>>, ln, iodata) do
     case src do
       # The first character following 0o must be between 0-7
       <<c::utf8, _::binary>> when is_octal_digit(c) ->
         {number_str, src} = parse_octal(src, [iodata | ["0o"]])
-        {src, %Tokens.OctalNumber{value: number_str}}
+        {src, Token.new(:octal_number, ln, number_str)}
 
       _ ->
         {:error, "invalid number literal"}
     end
   end
 
-  defp lex_number(<<"0x", src::binary>>, iodata) do
+  defp lex_number(<<"0x", src::binary>>, ln, iodata) do
     case src do
       # The first character following 0x must be between 0-9 or a-z or A-Z
       <<c::utf8, _::binary>> when is_hexadecimal_digit(c) ->
         {number_str, src} = parse_hexadecimal(src, [iodata | ["0x"]])
-        {src, %Tokens.HexadecimalNumber{value: number_str}}
+        {src, Token.new(:hexadecimal_number, ln, number_str)}
 
       _ ->
         {:error, "invalid number literal"}
     end
   end
 
-  defp lex_number(<<c::utf8, _::binary>> = src, iodata) when is_digit(c) do
+  defp lex_number(<<c::utf8, _::binary>> = src, ln, iodata) when is_digit(c) do
     case parse_decimal_number(src, iodata, false, false) do
       {:ok, {number_str, src}} ->
-        {src, %Tokens.DecimalNumber{value: number_str}}
+        {src, Token.new(:decimal_number, ln, number_str)}
 
       error ->
         error
