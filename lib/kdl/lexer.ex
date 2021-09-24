@@ -241,30 +241,30 @@ defmodule Kdl.Lexer do
   end
 
   defp lex_identifier(src, ln, tks) do
-    {token, src} =
+    {src, token} =
       case lex_identifier(src, []) do
-        {"null", src} ->
-          {Token.new(:null, ln), src}
+        {src, "null"} ->
+          {src, Token.new(:null, ln)}
 
-        {"true", src} ->
-          {Token.new(:boolean, ln, true), src}
+        {src, "true"} ->
+          {src, Token.new(:boolean, ln, true)}
 
-        {"false", src} ->
-          {Token.new(:boolean, ln, false), src}
+        {src, "false"} ->
+          {src, Token.new(:boolean, ln, false)}
 
-        {identifier, src} ->
-          {Token.new(:bare_identifier, ln, identifier), src}
+        {src, identifier} ->
+          {src, Token.new(:bare_identifier, ln, identifier)}
       end
 
     lex(src, ln, [token | tks])
   end
 
   defp lex_identifier("" = src, iodata) do
-    {IO.iodata_to_binary(iodata), src}
+    {src, IO.iodata_to_binary(iodata)}
   end
 
   defp lex_identifier(<<c::utf8, _::binary>> = src, iodata) when is_non_identifier_char(c) do
-    {IO.iodata_to_binary(iodata), src}
+    {src, IO.iodata_to_binary(iodata)}
   end
 
   defp lex_identifier(<<c::utf8, src::binary>>, iodata) do
