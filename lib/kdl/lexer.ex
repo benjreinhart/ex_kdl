@@ -102,19 +102,9 @@ defmodule Kdl.Lexer do
     lex(encoded, 1, [])
   end
 
-  defp lex("", _ln, tks) do
-    [Token.new(:eof) | tks]
-    |> Enum.reverse()
-    |> then(&{:ok, &1})
-  end
-
-  defp lex(<<"\r\n", src::binary>>, ln, tks) do
-    token = Token.new(:newline, ln, "\r\n")
-    lex(src, ln + 1, [token | tks])
-  end
-
-  defp lex(<<c::utf8, src::binary>>, ln, tks) when is_newline(c) do
-    token = Token.new(:newline, ln, <<c::utf8>>)
+  defp lex(<<c::utf8, _::binary>> = src, ln, tks) when is_newline(c) do
+    {src, char} = get_newline_char(src)
+    token = Token.new(:newline, ln, char)
     lex(src, ln + 1, [token | tks])
   end
 
@@ -123,37 +113,37 @@ defmodule Kdl.Lexer do
     lex(src, ln, [token | tks])
   end
 
-  defp lex(<<";", src::binary>>, ln, tks) do
+  defp lex(<<?;, src::binary>>, ln, tks) do
     token = Token.new(:semicolon, ln)
     lex(src, ln, [token | tks])
   end
 
-  defp lex(<<"{", src::binary>>, ln, tks) do
+  defp lex(<<?{, src::binary>>, ln, tks) do
     token = Token.new(:left_brace, ln)
     lex(src, ln, [token | tks])
   end
 
-  defp lex(<<"}", src::binary>>, ln, tks) do
+  defp lex(<<?}, src::binary>>, ln, tks) do
     token = Token.new(:right_brace, ln)
     lex(src, ln, [token | tks])
   end
 
-  defp lex(<<"(", src::binary>>, ln, tks) do
+  defp lex(<<?(, src::binary>>, ln, tks) do
     token = Token.new(:left_paren, ln)
     lex(src, ln, [token | tks])
   end
 
-  defp lex(<<")", src::binary>>, ln, tks) do
+  defp lex(<<?), src::binary>>, ln, tks) do
     token = Token.new(:right_paren, ln)
     lex(src, ln, [token | tks])
   end
 
-  defp lex(<<"=", src::binary>>, ln, tks) do
+  defp lex(<<?=, src::binary>>, ln, tks) do
     token = Token.new(:equals, ln)
     lex(src, ln, [token | tks])
   end
 
-  defp lex(<<"/*", _::binary>> = src, ln, tks) do
+  defp lex(<<?/, ?*, _::binary>> = src, ln, tks) do
     line_started_on = ln
 
     case lex_multiline_comment(src, ln, 0) do
@@ -166,18 +156,18 @@ defmodule Kdl.Lexer do
     end
   end
 
-  defp lex(<<"//", src::binary>>, ln, tks) do
+  defp lex(<<?/, ?/, src::binary>>, ln, tks) do
     src
     |> advance_until_newline()
     |> lex(ln, [Token.new(:line_comment, ln) | tks])
   end
 
-  defp lex(<<"\\", src::binary>>, ln, tks) do
+  defp lex(<<?\\, src::binary>>, ln, tks) do
     token = Token.new(:continuation, ln)
     lex(src, ln, [token | tks])
   end
 
-  defp lex(<<"/-", src::binary>>, ln, tks) do
+  defp lex(<<?/, ?-, src::binary>>, ln, tks) do
     token = Token.new(:node_comment, ln)
     lex(src, ln, [token | tks])
   end
@@ -192,7 +182,7 @@ defmodule Kdl.Lexer do
     lex_number(src, [c1], ln, tks)
   end
 
-  defp lex(<<"\""::utf8, src::binary>>, ln, tks) do
+  defp lex(<<?", src::binary>>, ln, tks) do
     line_started_on = ln
 
     case lex_string(src, ln, []) do
@@ -205,12 +195,12 @@ defmodule Kdl.Lexer do
     end
   end
 
-  defp lex(<<"r", c::utf8, _::binary>> = src, ln, tks) when c in '#"' do
+  defp lex(<<?r, c::utf8, _::binary>> = src, ln, tks) when c in '#"' do
     <<_::utf8, rest::binary>> = src
     line_started_on = ln
 
     case count_contiguous_number_signs(rest, 0) do
-      {count, <<"\"", src::binary>>} ->
+      {<<?", src::binary>>, count} ->
         case lex_raw_string(src, ln, [], count) do
           {src, ln, str} ->
             token = Token.new(:raw_string, line_started_on, str)
@@ -229,6 +219,11 @@ defmodule Kdl.Lexer do
 
   defp lex(<<c::utf8, _::binary>> = src, ln, tks) when is_initial_identifier_char(c) do
     lex_identifier(src, ln, tks)
+  end
+
+  defp lex(<<>>, _ln, tks) do
+    tokens = [Token.new(:eof) | tks]
+    {:ok, Enum.reverse(tokens)}
   end
 
   defp lex(<<c::utf8, src::binary>>, ln, tks) when is_bom_char(c) do
@@ -259,16 +254,16 @@ defmodule Kdl.Lexer do
     lex(src, ln, [token | tks])
   end
 
-  defp lex_identifier("" = src, iodata) do
-    {src, IO.iodata_to_binary(iodata)}
-  end
-
   defp lex_identifier(<<c::utf8, _::binary>> = src, iodata) when is_non_identifier_char(c) do
     {src, IO.iodata_to_binary(iodata)}
   end
 
   defp lex_identifier(<<c::utf8, src::binary>>, iodata) do
     lex_identifier(src, [iodata | [<<c::utf8>>]])
+  end
+
+  defp lex_identifier(<<>> = src, iodata) do
+    {src, IO.iodata_to_binary(iodata)}
   end
 
   defp lex_number(src, iodata, ln, tks) do
@@ -281,7 +276,7 @@ defmodule Kdl.Lexer do
     end
   end
 
-  defp lex_number(<<"0b", src::binary>>, ln, iodata) do
+  defp lex_number(<<?0, ?b, src::binary>>, ln, iodata) do
     case src do
       # The first character following 0b must be between 0-1
       <<c::utf8, _::binary>> when is_binary_digit(c) ->
@@ -293,7 +288,7 @@ defmodule Kdl.Lexer do
     end
   end
 
-  defp lex_number(<<"0o", src::binary>>, ln, iodata) do
+  defp lex_number(<<?0, ?o, src::binary>>, ln, iodata) do
     case src do
       # The first character following 0o must be between 0-7
       <<c::utf8, _::binary>> when is_octal_digit(c) ->
@@ -305,7 +300,7 @@ defmodule Kdl.Lexer do
     end
   end
 
-  defp lex_number(<<"0x", src::binary>>, ln, iodata) do
+  defp lex_number(<<?0, ?x, src::binary>>, ln, iodata) do
     case src do
       # The first character following 0x must be between 0-9 or a-z or A-Z
       <<c::utf8, _::binary>> when is_hexadecimal_digit(c) ->
@@ -327,118 +322,109 @@ defmodule Kdl.Lexer do
     end
   end
 
-  defp lex_string("", _ln, _iodata) do
-    {:error, "unterminated string meets end of file"}
-  end
-
-  defp lex_string(<<"\"", src::binary>>, ln, iodata) do
+  defp lex_string(<<?", src::binary>>, ln, iodata) do
     {src, ln, IO.iodata_to_binary(iodata)}
   end
 
-  defp lex_string(<<"\\n", src::binary>>, ln, iodata) do
-    lex_string(src, ln, [iodata | [?\n]])
-  end
+  defp lex_string(<<?\\, c::utf8, src::binary>>, ln, iodata) do
+    case c do
+      ?" ->
+        lex_string(src, ln, [iodata | [?"]])
 
-  defp lex_string(<<"\\r", src::binary>>, ln, iodata) do
-    lex_string(src, ln, [iodata | [?\r]])
-  end
+      ?n ->
+        lex_string(src, ln, [iodata | [?\n]])
 
-  defp lex_string(<<"\\t", src::binary>>, ln, iodata) do
-    lex_string(src, ln, [iodata | [?\t]])
-  end
+      ?t ->
+        lex_string(src, ln, [iodata | [?\t]])
 
-  defp lex_string(<<"\\\\", src::binary>>, ln, iodata) do
-    lex_string(src, ln, [iodata | [?\\]])
-  end
+      ?\\ ->
+        lex_string(src, ln, [iodata | [?\\]])
 
-  defp lex_string(<<"\\/", src::binary>>, ln, iodata) do
-    lex_string(src, ln, [iodata | [?/]])
-  end
+      ?/ ->
+        lex_string(src, ln, [iodata | [?/]])
 
-  defp lex_string(<<"\\\"", src::binary>>, ln, iodata) do
-    lex_string(src, ln, [iodata | [?"]])
-  end
+      ?u ->
+        case src do
+          <<"{", src::binary>> ->
+            case parse_unicode_escape(src, [], 0) do
+              {:error, message} ->
+                {:error, message}
 
-  defp lex_string(<<"\\b", src::binary>>, ln, iodata) do
-    lex_string(src, ln, [iodata | [?\b]])
-  end
+              {src, codepoint} ->
+                lex_string(src, ln, [iodata | [<<codepoint::utf8>>]])
+            end
 
-  defp lex_string(<<"\\f", src::binary>>, ln, iodata) do
-    lex_string(src, ln, [iodata | [?\f]])
-  end
+          _ ->
+            {:error, "invalid escape in string"}
+        end
 
-  defp lex_string(<<"\\u{", src::binary>>, ln, iodata) do
-    case parse_unicode_escape(src, [], 0) do
-      {:error, message} ->
-        {:error, message}
+      ?r ->
+        lex_string(src, ln, [iodata | [?\r]])
 
-      {src, codepoint} ->
-        lex_string(src, ln, [iodata | [<<codepoint::utf8>>]])
+      ?b ->
+        lex_string(src, ln, [iodata | [?\b]])
+
+      ?f ->
+        lex_string(src, ln, [iodata | [?\f]])
+
+      _ ->
+        {:error, "invalid escape in string"}
     end
   end
 
-  defp lex_string(<<"\\", _src::binary>>, _ln, _iodata) do
-    {:error, "invalid escape in string"}
-  end
-
-  defp lex_string(<<"\n", src::binary>>, ln, iodata) do
-    lex_string(src, ln + 1, [iodata | [?\n]])
+  defp lex_string(<<c::utf8, _::binary>> = src, ln, iodata) when is_newline(c) do
+    {src, char} = get_newline_char(src)
+    lex_string(src, ln + 1, [iodata | [char]])
   end
 
   defp lex_string(<<c::utf8, src::binary>>, ln, iodata) do
     lex_string(src, ln, [iodata | [<<c::utf8>>]])
   end
 
-  defp lex_raw_string("", _ln, _iodata, _number_sign_count) do
+  defp lex_string(<<>>, _ln, _iodata) do
     {:error, "unterminated string meets end of file"}
   end
 
-  defp lex_raw_string(<<"\"", src::binary>>, ln, iodata, 0) do
-    {src, ln, IO.iodata_to_binary(iodata)}
-  end
-
-  defp lex_raw_string(<<"\"#", src::binary>>, ln, iodata, 1) do
-    {src, ln, IO.iodata_to_binary(iodata)}
-  end
-
-  defp lex_raw_string(<<"\"#", src::binary>>, ln, iodata, number_sign_count)
-       when number_sign_count > 1 do
-    expected_count = number_sign_count - 1
-
+  defp lex_raw_string(<<?", src::binary>>, ln, iodata, number_sign_count) do
     case count_contiguous_number_signs(src, 0) do
-      {^expected_count, src} ->
+      {src, ^number_sign_count} ->
         {src, ln, IO.iodata_to_binary(iodata)}
 
       _ ->
-        lex_raw_string(src, ln, [iodata | [?", ?#]], number_sign_count)
+        lex_raw_string(src, ln, [iodata | [?"]], number_sign_count)
     end
   end
 
-  defp lex_raw_string(<<"\n", src::binary>>, ln, iodata, number_sign_count) do
-    lex_raw_string(src, ln + 1, [iodata | [?\n]], number_sign_count)
+  defp lex_raw_string(<<c::utf8, _::binary>> = src, ln, iodata, number_sign_count)
+       when is_newline(c) do
+    {src, char} = get_newline_char(src)
+    lex_raw_string(src, ln + 1, [iodata | [char]], number_sign_count)
   end
 
   defp lex_raw_string(<<c::utf8, src::binary>>, ln, iodata, number_sign_count) do
     lex_raw_string(src, ln, [iodata | [<<c::utf8>>]], number_sign_count)
   end
 
-  defp lex_multiline_comment("", _ln, count) when count > 0 do
-    {:error, "unterminated multiline comment"}
+  defp lex_raw_string(<<>>, _ln, _iodata, _number_sign_count) do
+    {:error, "unterminated string meets end of file"}
   end
 
-  defp lex_multiline_comment(<<"*/", src::binary>>, ln, 1) do
-    {src, ln}
+  defp lex_multiline_comment(<<?*, ?/, src::binary>>, ln, count) do
+    case count do
+      1 ->
+        {src, ln}
+
+      _ ->
+        lex_multiline_comment(src, ln, count - 1)
+    end
   end
 
-  defp lex_multiline_comment(<<"*/", src::binary>>, ln, count) when count > 1 do
-    lex_multiline_comment(src, ln, count - 1)
-  end
-
-  defp lex_multiline_comment(<<"/*", src::binary>>, ln, count) do
+  defp lex_multiline_comment(<<?/, ?*, src::binary>>, ln, count) do
     lex_multiline_comment(src, ln, count + 1)
   end
 
-  defp lex_multiline_comment(<<"\n", src::binary>>, ln, count) do
+  defp lex_multiline_comment(<<c::utf8, _::binary>> = src, ln, count) when is_newline(c) do
+    {src, _char} = get_newline_char(src)
     lex_multiline_comment(src, ln + 1, count)
   end
 
@@ -446,8 +432,8 @@ defmodule Kdl.Lexer do
     lex_multiline_comment(src, ln, count)
   end
 
-  defp parse_binary("" = src, iodata) do
-    {IO.iodata_to_binary(iodata), src}
+  defp lex_multiline_comment(<<>>, _ln, _count) do
+    {:error, "unterminated multiline comment"}
   end
 
   defp parse_binary(<<c::utf8, src::binary>>, iodata) when is_binary_digit(c) or c == ?_ do
@@ -455,10 +441,6 @@ defmodule Kdl.Lexer do
   end
 
   defp parse_binary(src, iodata) do
-    {IO.iodata_to_binary(iodata), src}
-  end
-
-  defp parse_octal("" = src, iodata) do
     {IO.iodata_to_binary(iodata), src}
   end
 
@@ -470,10 +452,6 @@ defmodule Kdl.Lexer do
     {IO.iodata_to_binary(iodata), src}
   end
 
-  defp parse_hexadecimal("" = src, iodata) do
-    {IO.iodata_to_binary(iodata), src}
-  end
-
   defp parse_hexadecimal(<<c::utf8, src::binary>>, iodata)
        when is_hexadecimal_digit(c) or c == ?_ do
     parse_hexadecimal(src, [iodata | [c]])
@@ -481,10 +459,6 @@ defmodule Kdl.Lexer do
 
   defp parse_hexadecimal(src, iodata) do
     {IO.iodata_to_binary(iodata), src}
-  end
-
-  defp parse_decimal_number("" = src, iodata, _dot, _exp) do
-    {:ok, {IO.iodata_to_binary(iodata), src}}
   end
 
   defp parse_decimal_number(<<c::utf8, src::binary>>, iodata, dot, exp)
@@ -499,7 +473,7 @@ defmodule Kdl.Lexer do
   # Since 10.01 is a valid number literal and .[digit] is a valid identifier,
   # this isn't an error in the lexer. Therefore, we return the number parsed
   # up until the second "." (10.01) as our valid number literal.
-  defp parse_decimal_number(<<".", _::binary>> = src, iodata, true, _exp) do
+  defp parse_decimal_number(<<?., _::binary>> = src, iodata, true, _exp) do
     {:ok, {IO.iodata_to_binary(iodata), src}}
   end
 
@@ -511,7 +485,7 @@ defmodule Kdl.Lexer do
   # In this case, 10. is the start of a valid number literal, but it must have
   # at least one digit after the "." to be valid. Since that isn't the case here,
   # we return an error indicating the syntax is invalid.
-  defp parse_decimal_number(<<".", c::utf8, _::binary>>, _iodata, false, _exp)
+  defp parse_decimal_number(<<?., c::utf8, _::binary>>, _iodata, false, _exp)
        when not is_digit(c) do
     {:error, "invalid number literal"}
   end
@@ -524,8 +498,8 @@ defmodule Kdl.Lexer do
   #
   # So, as long we are not in the exponent part of a number literal,
   # this is a valid placement of a "." inside a number literal.
-  defp parse_decimal_number(<<".", src::binary>>, iodata, false, false) do
-    parse_decimal_number(src, [iodata | ["."]], true, false)
+  defp parse_decimal_number(<<?., src::binary>>, iodata, false, false) do
+    parse_decimal_number(src, [iodata | [?.]], true, false)
   end
 
   # This matches when we have already seen an exponent in the number. For example:
@@ -581,11 +555,7 @@ defmodule Kdl.Lexer do
     {:ok, {IO.iodata_to_binary(iodata), src}}
   end
 
-  defp parse_unicode_escape("", _iodata, _length) do
-    {:error, "unterminated string meets end of file"}
-  end
-
-  defp parse_unicode_escape(<<"\"", _::binary>>, _iodata, _length) do
+  defp parse_unicode_escape(<<?", _::binary>>, _iodata, _length) do
     {:error, "unterminated unicode escape"}
   end
 
@@ -615,20 +585,20 @@ defmodule Kdl.Lexer do
     parse_unicode_escape(src, [iodata | [c]], length + 1)
   end
 
+  defp parse_unicode_escape(<<>>, _iodata, _length) do
+    {:error, "unterminated string meets end of file"}
+  end
+
   defp parse_unicode_escape(_src, _length, _iodata) do
     {:error, "invalid character in unicode escape"}
   end
 
-  defp count_contiguous_number_signs(<<"#", src::binary>>, count) do
+  defp count_contiguous_number_signs(<<?#, src::binary>>, count) do
     count_contiguous_number_signs(src, count + 1)
   end
 
   defp count_contiguous_number_signs(src, count) do
-    {count, src}
-  end
-
-  defp advance_until_newline("" = src) do
-    src
+    {src, count}
   end
 
   defp advance_until_newline(<<c::utf8, _::binary>> = src) when is_newline(c) do
@@ -637,5 +607,21 @@ defmodule Kdl.Lexer do
 
   defp advance_until_newline(<<_::utf8, src::binary>>) do
     advance_until_newline(src)
+  end
+
+  defp advance_until_newline(<<>> = src) do
+    src
+  end
+
+  defp get_newline_char(<<?\n, src::binary>>) do
+    {src, <<?\n>>}
+  end
+
+  defp get_newline_char(<<?\r, ?\n, src::binary>>) do
+    {src, <<?\r, ?\n>>}
+  end
+
+  defp get_newline_char(<<c::utf8, src::binary>>) when is_newline(c) do
+    {src, <<c::utf8>>}
   end
 end

@@ -367,5 +367,16 @@ defmodule Kdl.LexerTest do
 
     assert {:error, %SyntaxError{line: 7, message: "invalid number literal"}} =
              Lexer.lex("node_1 r\"\nmulti\nline\nraw\nstring\n\"\nnode_2 0bnotnumber")
+
+    # \r\n counted as one newline within multiline comments and strings:
+
+    assert {:error, %SyntaxError{line: 4, message: "unterminated string meets end of file"}} =
+             Lexer.lex("node_1 /*\r\ncomment\r\n*/\r\n  node_2 \"string \\u{a0")
+
+    assert {:error, %SyntaxError{line: 4, message: "unterminated string meets end of file"}} =
+             Lexer.lex("node_1 \"\r\nstring\r\n\"\r\n node_2 \"string \\u{a0")
+
+    assert {:error, %SyntaxError{line: 4, message: "unterminated string meets end of file"}} =
+             Lexer.lex("node_1 r####\"\r\nstring\r\n\"####\r\n node_2 \"string \\u{a0")
   end
 end
