@@ -1,10 +1,13 @@
 defmodule Kdl do
+  alias Kdl.Lexer
   alias Kdl.Parser
 
   @spec decode(binary()) :: {:ok | :error, term()}
 
   def decode(encoded) when is_binary(encoded) do
-    Parser.parse(encoded)
+    with {:ok, tokens} <- Lexer.lex(encoded) do
+      Parser.parse(tokens)
+    end
   end
 
   def decode(_) do
