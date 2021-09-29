@@ -288,7 +288,7 @@ defmodule Kdl.LexerTest do
              {:multiline_comment, 1},
              {:whitespace, 1, " "},
              {:number, 1, 20},
-             :eof
+             {:eof}
            ] = tokens
 
     {:ok, tokens} = Lexer.lex("node {/*\n  /* nested */\n  /* comments */\n*/\n  child 20\n}")
@@ -306,7 +306,7 @@ defmodule Kdl.LexerTest do
              {:number, 5, 20},
              {:newline, 5, "\n"},
              {:right_brace, 6},
-             :eof
+             {:eof}
            ] = tokens
 
     assert {:error, %SyntaxError{line: 1, message: "unterminated multiline comment"}} =
@@ -324,7 +324,7 @@ defmodule Kdl.LexerTest do
              {:bare_identifier, 1, "node"},
              {:whitespace, 1, " "},
              {:number, 1, 1},
-             :eof
+             {:eof}
            ] = tokens
 
     {:ok, tokens} = Lexer.lex("node /-1")
@@ -334,7 +334,7 @@ defmodule Kdl.LexerTest do
              {:whitespace, 1, " "},
              {:node_comment, 1},
              {:number, 1, 1},
-             :eof
+             {:eof}
            ] = tokens
 
     {:ok, tokens} = Lexer.lex("node/-1")
@@ -343,7 +343,7 @@ defmodule Kdl.LexerTest do
              {:bare_identifier, 1, "node"},
              {:node_comment, 1},
              {:number, 1, 1},
-             :eof
+             {:eof}
            ] = tokens
   end
 

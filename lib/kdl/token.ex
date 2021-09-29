@@ -1,5 +1,9 @@
 defmodule Kdl.Token do
-  @type valueless_token_type ::
+  @type t :: {:eof} | {atom(), non_neg_integer()} | {atom(), non_neg_integer(), any()}
+
+  defguard is_type(token, type) when elem(token, 0) == type
+
+  @type valueless_token_types ::
           :bom
           | :semicolon
           | :left_brace
@@ -13,7 +17,7 @@ defmodule Kdl.Token do
           | :line_comment
           | :multiline_comment
 
-  @type token_type ::
+  @type token_types ::
           :boolean
           | :number
           | :string
@@ -22,19 +26,27 @@ defmodule Kdl.Token do
           | :newline
           | :whitespace
 
-  @spec new(:eof) :: :eof
+  @spec new(:eof) :: {:eof}
   def new(:eof) do
-    :eof
+    {:eof}
   end
 
-  @spec new(valueless_token_type(), non_neg_integer) ::
-          {valueless_token_type(), non_neg_integer}
+  @spec new(valueless_token_types(), non_neg_integer) :: t
   def new(type, ln) do
     {type, ln}
   end
 
-  @spec new(token_type, non_neg_integer, any) :: {token_type, non_neg_integer, any}
+  @spec new(token_types, non_neg_integer, any) :: t
   def new(type, ln, value) do
     {type, ln, value}
+  end
+
+  @spec value(t) :: any
+  def value({_type, _ln, value}) do
+    value
+  end
+
+  def value(_token) do
+    nil
   end
 end
