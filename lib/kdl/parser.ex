@@ -24,7 +24,7 @@ defmodule Kdl.Parser do
   defguardp is_identifier(token)
             when is_type(token, :bare_identifier) or is_type(token, :string)
 
-  @spec parse(list(tuple)) :: {:ok | :error, term()}
+  @spec parse(list(tuple)) :: {:ok, list(map())} | {:error, binary()}
 
   def parse(tokens) do
     case parse_nodes(tokens) do
@@ -34,9 +34,8 @@ defmodule Kdl.Parser do
       {:match, [token], nodes} when is_type(token, :eof) ->
         {:ok, nodes}
 
-      {:match, tokens, _} ->
-        IO.inspect(tokens)
-        raise "failed to parse KDL document"
+      {:match, _, _} ->
+        {:error, "failed to parse KDL document"}
     end
   end
 
