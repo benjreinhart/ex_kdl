@@ -116,24 +116,24 @@ defmodule Kdl.LexerTest do
   end
 
   test "correctly parses raw strings" do
-    assert {:raw_string, 1, "hello world"} = lex_hd("r\"hello world\"")
-    assert {:raw_string, 1, "hello\\nworld"} = lex_hd("r\"hello\\nworld\"")
-    assert {:raw_string, 1, "hello\\tworld"} = lex_hd("r\"hello\\tworld\"")
-    assert {:raw_string, 1, "hello\nworld"} = lex_hd("r\"hello\nworld\"")
-    assert {:raw_string, 1, "hello\tworld"} = lex_hd("r\"hello\tworld\"")
+    assert {:string, 1, "hello world"} = lex_hd("r\"hello world\"")
+    assert {:string, 1, "hello\\nworld"} = lex_hd("r\"hello\\nworld\"")
+    assert {:string, 1, "hello\\tworld"} = lex_hd("r\"hello\\tworld\"")
+    assert {:string, 1, "hello\nworld"} = lex_hd("r\"hello\nworld\"")
+    assert {:string, 1, "hello\tworld"} = lex_hd("r\"hello\tworld\"")
 
-    assert {:raw_string, 1, "hello world"} = lex_hd("r#\"hello world\"#")
-    assert {:raw_string, 1, "hello\\nworld"} = lex_hd("r#\"hello\\nworld\"#")
-    assert {:raw_string, 1, "hello\\tworld"} = lex_hd("r#\"hello\\tworld\"#")
-    assert {:raw_string, 1, "hello\nworld"} = lex_hd("r#\"hello\nworld\"#")
-    assert {:raw_string, 1, "hello\tworld"} = lex_hd("r#\"hello\tworld\"#")
-    assert {:raw_string, 1, "hello\\t\"world\""} = lex_hd("r#\"hello\\t\"world\"\"#")
+    assert {:string, 1, "hello world"} = lex_hd("r#\"hello world\"#")
+    assert {:string, 1, "hello\\nworld"} = lex_hd("r#\"hello\\nworld\"#")
+    assert {:string, 1, "hello\\tworld"} = lex_hd("r#\"hello\\tworld\"#")
+    assert {:string, 1, "hello\nworld"} = lex_hd("r#\"hello\nworld\"#")
+    assert {:string, 1, "hello\tworld"} = lex_hd("r#\"hello\tworld\"#")
+    assert {:string, 1, "hello\\t\"world\""} = lex_hd("r#\"hello\\t\"world\"\"#")
 
-    assert {:raw_string, 1, "hello world"} = lex_hd("r##\"hello world\"##")
-    assert {:raw_string, 1, "hello \"# world"} = lex_hd("r##\"hello \"# world\"##")
-    assert {:raw_string, 1, "hello world"} = lex_hd("r####\"hello world\"####")
+    assert {:string, 1, "hello world"} = lex_hd("r##\"hello world\"##")
+    assert {:string, 1, "hello \"# world"} = lex_hd("r##\"hello \"# world\"##")
+    assert {:string, 1, "hello world"} = lex_hd("r####\"hello world\"####")
 
-    assert {:raw_string, 1, "hello \" \"### world"} = lex_hd("r####\"hello \" \"### world\"####")
+    assert {:string, 1, "hello \" \"### world"} = lex_hd("r####\"hello \" \"### world\"####")
 
     assert {:error, %SyntaxError{line: 1, message: "unterminated string meets end of file"}} =
              Lexer.lex("node r\"name")

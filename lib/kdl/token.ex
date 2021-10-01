@@ -21,7 +21,6 @@ defmodule Kdl.Token do
           :boolean
           | :number
           | :string
-          | :raw_string
           | :bare_identifier
           | :newline
           | :whitespace

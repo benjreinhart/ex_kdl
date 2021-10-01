@@ -11,21 +11,18 @@ defmodule Kdl.Parser do
                    is_type(token, :bom)
 
   defguardp is_linespace(token)
-            when is_type(token, :newline) or
-                   is_whitespace(token) or
+            when is_whitespace(token) or
+                   is_type(token, :newline) or
                    is_type(token, :line_comment)
-
-  defguardp is_string(token)
-            when is_type(token, :string) or is_type(token, :raw_string)
 
   defguardp is_keyword(token)
             when is_type(token, :null) or is_type(token, :boolean)
 
   defguardp is_value(token)
-            when is_string(token) or is_type(token, :number) or is_keyword(token)
+            when is_type(token, :string) or is_type(token, :number) or is_keyword(token)
 
   defguardp is_identifier(token)
-            when is_type(token, :bare_identifier) or is_string(token)
+            when is_type(token, :bare_identifier) or is_type(token, :string)
 
   @spec parse(list(tuple)) :: {:ok | :error, term()}
 

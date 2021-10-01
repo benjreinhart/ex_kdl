@@ -204,7 +204,7 @@ defmodule Kdl.Lexer do
       {<<?", src::binary>>, count} ->
         case lex_raw_string(src, ln, [], count) do
           {src, ln, str} ->
-            token = Token.new(:raw_string, line_started_on, str)
+            token = Token.new(:string, line_started_on, str)
             lex(src, ln, [token | tks])
 
           {:error, message} ->
