@@ -1,4 +1,4 @@
-defmodule Kdl.Number do
+defmodule Kdl.Utils.Number do
   @type format :: :integer | :float | :binary | :octal | :hexadecimal
 
   @spec parse(binary, format) :: number

@@ -1,7 +1,7 @@
 defmodule Kdl.Lexer do
-  alias Kdl.Number
   alias Kdl.Token
   alias Kdl.Errors.SyntaxError
+  alias Kdl.Utils.Number
 
   # Whitespace characters.
   #
