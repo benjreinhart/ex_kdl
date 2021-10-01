@@ -315,7 +315,7 @@ defmodule Kdl.Lexer do
   end
 
   defp lex_number(<<c::utf8, _::binary>> = src, iodata) when is_digit(c) do
-    case parse_decimal_number(src, iodata, false, false) do
+    case parse_decimal(src, iodata, false, false) do
       {:ok, {number_str, src, dot, exp}} ->
         format = if dot or exp, do: :float, else: :integer
         {src, Number.parse(number_str, format)}
@@ -475,12 +475,12 @@ defmodule Kdl.Lexer do
     {IO.iodata_to_binary(iodata), src}
   end
 
-  defp parse_decimal_number(<<c::utf8, src::binary>>, iodata, dot, exp) when is_digit(c) do
-    parse_decimal_number(src, [iodata | [c]], dot, exp)
+  defp parse_decimal(<<c::utf8, src::binary>>, iodata, dot, exp) when is_digit(c) do
+    parse_decimal(src, [iodata | [c]], dot, exp)
   end
 
-  defp parse_decimal_number(<<?_, src::binary>>, iodata, dot, exp) do
-    parse_decimal_number(src, iodata, dot, exp)
+  defp parse_decimal(<<?_, src::binary>>, iodata, dot, exp) do
+    parse_decimal(src, iodata, dot, exp)
   end
 
   # This matches when we have already seen a "." in the number. For example:
@@ -490,7 +490,7 @@ defmodule Kdl.Lexer do
   # Since 10.01 is a valid number literal and .[digit] is a valid identifier,
   # this isn't an error in the lexer. Therefore, we return the number parsed
   # up until the second "." (10.01) as our valid number literal.
-  defp parse_decimal_number(<<?., _::binary>> = src, iodata, true, exp) do
+  defp parse_decimal(<<?., _::binary>> = src, iodata, true, exp) do
     {:ok, {IO.iodata_to_binary(iodata), src, true, exp}}
   end
 
@@ -502,8 +502,7 @@ defmodule Kdl.Lexer do
   # In this case, 10. is the start of a valid number literal, but it must have
   # at least one digit after the "." to be valid. Since that isn't the case here,
   # we return an error indicating the syntax is invalid.
-  defp parse_decimal_number(<<?., c::utf8, _::binary>>, _iodata, false, _exp)
-       when not is_digit(c) do
+  defp parse_decimal(<<?., c::utf8, _::binary>>, _iodata, false, _exp) when not is_digit(c) do
     {:error, "invalid number literal"}
   end
 
@@ -515,8 +514,8 @@ defmodule Kdl.Lexer do
   #
   # So, as long we are not in the exponent part of a number literal,
   # this is a valid placement of a "." inside a number literal.
-  defp parse_decimal_number(<<?., src::binary>>, iodata, false, false) do
-    parse_decimal_number(src, [iodata | [?.]], true, false)
+  defp parse_decimal(<<?., src::binary>>, iodata, false, false) do
+    parse_decimal(src, [iodata | [?.]], true, false)
   end
 
   # This matches when we have already seen an exponent in the number. For example:
@@ -526,8 +525,7 @@ defmodule Kdl.Lexer do
   # Since 2e10 is a valid number literal and "e" is the start of a valid identifier,
   # this isn't an error in the lexer. Therefore, we return the number parsed up until
   # the second e (2e10) as our valid number literal.
-  defp parse_decimal_number(<<c::utf8, _::binary>> = src, iodata, dot, true)
-       when is_exp_char(c) do
+  defp parse_decimal(<<c::utf8, _::binary>> = src, iodata, dot, true) when is_exp_char(c) do
     {:ok, {IO.iodata_to_binary(iodata), src, dot, true}}
   end
 
@@ -538,9 +536,9 @@ defmodule Kdl.Lexer do
   #      ^^
   # This is the start of a valid exponent part of a number literal and so we
   # continue parsing.
-  defp parse_decimal_number(<<c1::utf8, c2::utf8, src::binary>>, iodata, dot, false)
+  defp parse_decimal(<<c1::utf8, c2::utf8, src::binary>>, iodata, dot, false)
        when is_exp_char(c1) and is_digit(c2) do
-    parse_decimal_number(src, [iodata | [c1, c2]], dot, true)
+    parse_decimal(src, [iodata | [c1, c2]], dot, true)
   end
 
   # This matches when we have not already encountered an exponent in the number
@@ -551,9 +549,9 @@ defmodule Kdl.Lexer do
   #      ^^^
   # This is the start of a valid exponent part of a number literal and so we
   # continue parsing.
-  defp parse_decimal_number(<<c1::utf8, c2::utf8, c3::utf8, src::binary>>, iodata, dot, false)
+  defp parse_decimal(<<c1::utf8, c2::utf8, c3::utf8, src::binary>>, iodata, dot, false)
        when is_exp_char(c1) and is_sign_char(c2) and is_digit(c3) do
-    parse_decimal_number(src, [iodata | [c1, c2, c3]], dot, true)
+    parse_decimal(src, [iodata | [c1, c2, c3]], dot, true)
   end
 
   # This matches when we have not already encountered an exponent in the number
@@ -564,11 +562,11 @@ defmodule Kdl.Lexer do
   #      ^^
   # This is an invalid number literal and so we return an error indicating the
   # syntax is malformed.
-  defp parse_decimal_number(<<c::utf8, _::binary>>, _iodata, _dot, false) when is_exp_char(c) do
+  defp parse_decimal(<<c::utf8, _::binary>>, _iodata, _dot, false) when is_exp_char(c) do
     {:error, "invalid number literal"}
   end
 
-  defp parse_decimal_number(src, iodata, dot, exp) do
+  defp parse_decimal(src, iodata, dot, exp) do
     {:ok, {IO.iodata_to_binary(iodata), src, dot, exp}}
   end
 
