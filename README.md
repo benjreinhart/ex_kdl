@@ -2,20 +2,40 @@
 
 This library is a WIP elixir implementation of the [KDL Document Language](https://kdl.dev).
 
-## Installation
+## Initial release
 
-If [available in Hex](https://hex.pm/docs/publish), the package can be installed
-by adding `kdl` to your list of dependencies in `mix.exs`:
+Blocking TODOs are captured in [#1](https://github.com/benjreinhart/kdl-ex/issues/1)
+
+## Documentation
+
+_Note: this library is a WIP and subject to change._
 
 ```elixir
-def deps do
-  [
-    {:kdl, "~> 0.1.0"}
-  ]
-end
+{:ok, nodes} = Kdl.decode("node 100 key=\"value\" 10_000 /* comment */ {\n  child_1 ; child_2\n}")
+
+IO.inspect(nodes)
+# [
+#   %{
+#     name: "node",
+#     values: [100, 10000],
+#     properties: %{"key" => "value"},
+#     children: [
+#       %{children: [], name: "child_1", properties: %{}, values: []},
+#       %{children: [], name: "child_2", properties: %{}, values: []}
+#     ]
+#   }
+# ]
 ```
 
-Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
-and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
-be found at [https://hexdocs.pm/kdl](https://hexdocs.pm/kdl).
+#### decode(binary()) :: {:ok, list(map())} | {:error, any()}
 
+Attempts to decode the given binary. If the binary is a valid KDL document, then `{:ok, nodes}` is returned where nodes is a list of maps. A node has the following shape:
+
+```elixir
+%{
+  name: binary(),
+  values: list(any())
+  properties: map(),
+  children: list(map()),
+}
+```
