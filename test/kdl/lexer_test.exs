@@ -146,20 +146,20 @@ defmodule Kdl.LexerTest do
   end
 
   test "correctly parses binary" do
-    assert {:binary_number, 1, "0b0"} = lex_hd("0b0")
-    assert {:binary_number, 1, "0b1"} = lex_hd("0b1")
-    assert {:binary_number, 1, "0b010011"} = lex_hd("0b010011")
+    assert {:number, 1, 0} = lex_hd("0b0")
+    assert {:number, 1, 1} = lex_hd("0b1")
+    assert {:number, 1, 19} = lex_hd("0b010011")
 
-    assert {:binary_number, 1, "+0b010011"} = lex_hd("+0b010011")
-    assert {:binary_number, 1, "-0b010011"} = lex_hd("-0b010011")
+    assert {:number, 1, 19} = lex_hd("+0b010011")
+    assert {:number, 1, -19} = lex_hd("-0b010011")
 
-    assert {:binary_number, 1, "0b010_011"} = lex_hd("0b010_011")
-    assert {:binary_number, 1, "+0b010_011"} = lex_hd("+0b010_011")
-    assert {:binary_number, 1, "-0b010_011"} = lex_hd("-0b010_011")
-    assert {:binary_number, 1, "0b010___011"} = lex_hd("0b010___011")
-    assert {:binary_number, 1, "0b0_1_0_0_1_1"} = lex_hd("0b0_1_0_0_1_1")
-    assert {:binary_number, 1, "0b010011_"} = lex_hd("0b010011_")
-    assert {:binary_number, 1, "0b010011___"} = lex_hd("0b010011___")
+    assert {:number, 1, 19} = lex_hd("0b010_011")
+    assert {:number, 1, 19} = lex_hd("+0b010_011")
+    assert {:number, 1, -19} = lex_hd("-0b010_011")
+    assert {:number, 1, 19} = lex_hd("0b010___011")
+    assert {:number, 1, 19} = lex_hd("0b0_1_0_0_1_1")
+    assert {:number, 1, 19} = lex_hd("0b010011_")
+    assert {:number, 1, 19} = lex_hd("0b010011___")
 
     assert {:error, %SyntaxError{line: 1, message: "invalid number literal"}} =
              Lexer.lex("0b_010011")
@@ -170,20 +170,20 @@ defmodule Kdl.LexerTest do
   end
 
   test "correctly parses octal" do
-    assert {:octal_number, 1, "0o0"} = lex_hd("0o0")
-    assert {:octal_number, 1, "0o7"} = lex_hd("0o7")
-    assert {:octal_number, 1, "0o312467"} = lex_hd("0o312467")
+    assert {:number, 1, 0} = lex_hd("0o0")
+    assert {:number, 1, 7} = lex_hd("0o7")
+    assert {:number, 1, 103_735} = lex_hd("0o312467")
 
-    assert {:octal_number, 1, "+0o312467"} = lex_hd("+0o312467")
-    assert {:octal_number, 1, "-0o312467"} = lex_hd("-0o312467")
+    assert {:number, 1, 103_735} = lex_hd("+0o312467")
+    assert {:number, 1, -103_735} = lex_hd("-0o312467")
 
-    assert {:octal_number, 1, "0o312_467"} = lex_hd("0o312_467")
-    assert {:octal_number, 1, "+0o312_467"} = lex_hd("+0o312_467")
-    assert {:octal_number, 1, "-0o312_467"} = lex_hd("-0o312_467")
-    assert {:octal_number, 1, "0o312___467"} = lex_hd("0o312___467")
-    assert {:octal_number, 1, "0o3_1_2_4_6_7"} = lex_hd("0o3_1_2_4_6_7")
-    assert {:octal_number, 1, "0o312467_"} = lex_hd("0o312467_")
-    assert {:octal_number, 1, "0o312467___"} = lex_hd("0o312467___")
+    assert {:number, 1, 103_735} = lex_hd("0o312_467")
+    assert {:number, 1, 103_735} = lex_hd("+0o312_467")
+    assert {:number, 1, -103_735} = lex_hd("-0o312_467")
+    assert {:number, 1, 103_735} = lex_hd("0o312___467")
+    assert {:number, 1, 103_735} = lex_hd("0o3_1_2_4_6_7")
+    assert {:number, 1, 103_735} = lex_hd("0o312467_")
+    assert {:number, 1, 103_735} = lex_hd("0o312467___")
 
     assert {:error, %SyntaxError{line: 1, message: "invalid number literal"}} =
              Lexer.lex("0o_312467")
@@ -194,22 +194,22 @@ defmodule Kdl.LexerTest do
   end
 
   test "correctly parses hexadecimal" do
-    assert {:hexadecimal_number, 1, "0x0"} = lex_hd("0x0")
-    assert {:hexadecimal_number, 1, "0xF"} = lex_hd("0xF")
-    assert {:hexadecimal_number, 1, "0x0A93BD8"} = lex_hd("0x0A93BD8")
-    assert {:hexadecimal_number, 1, "0x0a93bd8"} = lex_hd("0x0a93bd8")
-    assert {:hexadecimal_number, 1, "0x0A93bd8"} = lex_hd("0x0A93bd8")
+    assert {:number, 1, 0} = lex_hd("0x0")
+    assert {:number, 1, 15} = lex_hd("0xF")
+    assert {:number, 1, 11_090_904} = lex_hd("0x0A93BD8")
+    assert {:number, 1, 11_090_904} = lex_hd("0x0a93bd8")
+    assert {:number, 1, 11_090_904} = lex_hd("0x0A93bd8")
 
-    assert {:hexadecimal_number, 1, "+0x0A93BD8"} = lex_hd("+0x0A93BD8")
-    assert {:hexadecimal_number, 1, "-0x0A93BD8"} = lex_hd("-0x0A93BD8")
+    assert {:number, 1, 11_090_904} = lex_hd("+0x0A93BD8")
+    assert {:number, 1, -11_090_904} = lex_hd("-0x0A93BD8")
 
-    assert {:hexadecimal_number, 1, "0x0A93_BD8"} = lex_hd("0x0A93_BD8")
-    assert {:hexadecimal_number, 1, "+0x0A93_BD8"} = lex_hd("+0x0A93_BD8")
-    assert {:hexadecimal_number, 1, "-0x0A93_BD8"} = lex_hd("-0x0A93_BD8")
-    assert {:hexadecimal_number, 1, "0x0A93___BD8"} = lex_hd("0x0A93___BD8")
-    assert {:hexadecimal_number, 1, "0x0_A_9_3_B_D_8"} = lex_hd("0x0_A_9_3_B_D_8")
-    assert {:hexadecimal_number, 1, "0x0A93bd8_"} = lex_hd("0x0A93bd8_")
-    assert {:hexadecimal_number, 1, "0x0A93bd8___"} = lex_hd("0x0A93bd8___")
+    assert {:number, 1, 11_090_904} = lex_hd("0x0A93_BD8")
+    assert {:number, 1, 11_090_904} = lex_hd("+0x0A93_BD8")
+    assert {:number, 1, -11_090_904} = lex_hd("-0x0A93_BD8")
+    assert {:number, 1, 11_090_904} = lex_hd("0x0A93___BD8")
+    assert {:number, 1, 11_090_904} = lex_hd("0x0_A_9_3_B_D_8")
+    assert {:number, 1, 11_090_904} = lex_hd("0x0A93bd8_")
+    assert {:number, 1, 11_090_904} = lex_hd("0x0A93bd8___")
 
     assert {:error, %SyntaxError{line: 1, message: "invalid number literal"}} =
              Lexer.lex("0x_0A93bd8")
@@ -220,43 +220,43 @@ defmodule Kdl.LexerTest do
   end
 
   test "correctly parses decimal" do
-    assert {:decimal_number, 1, "0"} = lex_hd("0")
-    assert {:decimal_number, 1, "9"} = lex_hd("9")
-    assert {:decimal_number, 1, "124578"} = lex_hd("124578")
+    assert {:number, 1, 0} = lex_hd("0")
+    assert {:number, 1, 9} = lex_hd("9")
+    assert {:number, 1, 124_578} = lex_hd("124578")
 
-    assert {:decimal_number, 1, "+124578"} = lex_hd("+124578")
-    assert {:decimal_number, 1, "-124578"} = lex_hd("-124578")
+    assert {:number, 1, 124_578} = lex_hd("+124578")
+    assert {:number, 1, -124_578} = lex_hd("-124578")
 
-    assert {:decimal_number, 1, "124_578"} = lex_hd("124_578")
-    assert {:decimal_number, 1, "+124_578"} = lex_hd("+124_578")
-    assert {:decimal_number, 1, "-124_578"} = lex_hd("-124_578")
-    assert {:decimal_number, 1, "124___578"} = lex_hd("124___578")
-    assert {:decimal_number, 1, "1_2_4_5_7_8"} = lex_hd("1_2_4_5_7_8")
-    assert {:decimal_number, 1, "124578_"} = lex_hd("124578_")
-    assert {:decimal_number, 1, "124578___"} = lex_hd("124578___")
+    assert {:number, 1, 124_578} = lex_hd("124_578")
+    assert {:number, 1, 124_578} = lex_hd("+124_578")
+    assert {:number, 1, -124_578} = lex_hd("-124_578")
+    assert {:number, 1, 124_578} = lex_hd("124___578")
+    assert {:number, 1, 124_578} = lex_hd("1_2_4_5_7_8")
+    assert {:number, 1, 124_578} = lex_hd("124578_")
+    assert {:number, 1, 124_578} = lex_hd("124578___")
 
-    assert {:decimal_number, 1, "124.578"} = lex_hd("124.578")
-    assert {:decimal_number, 1, "+124.578"} = lex_hd("+124.578")
-    assert {:decimal_number, 1, "-124.578"} = lex_hd("-124.578")
-    assert {:decimal_number, 1, "12_4.57_8"} = lex_hd("12_4.57_8")
-    assert {:decimal_number, 1, "124_.57__8_"} = lex_hd("124_.57__8_")
+    assert {:number, 1, 124.578} = lex_hd("124.578")
+    assert {:number, 1, 124.578} = lex_hd("+124.578")
+    assert {:number, 1, -124.578} = lex_hd("-124.578")
+    assert {:number, 1, 124.578} = lex_hd("12_4.57_8")
+    assert {:number, 1, 124.578} = lex_hd("124_.57__8_")
 
-    assert {:decimal_number, 1, "10e256"} = lex_hd("10e256")
-    assert {:decimal_number, 1, "10E256"} = lex_hd("10E256")
-    assert {:decimal_number, 1, "10e+256"} = lex_hd("10e+256")
-    assert {:decimal_number, 1, "10e-256"} = lex_hd("10e-256")
-    assert {:decimal_number, 1, "10E+256"} = lex_hd("10E+256")
-    assert {:decimal_number, 1, "10E-256"} = lex_hd("10E-256")
-    assert {:decimal_number, 1, "+10e-256"} = lex_hd("+10e-256")
-    assert {:decimal_number, 1, "-10e+256"} = lex_hd("-10e+256")
-    assert {:decimal_number, 1, "10e+2_56"} = lex_hd("10e+2_56")
-    assert {:decimal_number, 1, "1_0e+2_56"} = lex_hd("1_0e+2_56")
+    assert {:number, 1, 1.0e257} = lex_hd("10e256")
+    assert {:number, 1, 1.0e257} = lex_hd("10E256")
+    assert {:number, 1, 1.0e257} = lex_hd("10e+256")
+    assert {:number, 1, 1.0e-255} = lex_hd("10e-256")
+    assert {:number, 1, 1.0e257} = lex_hd("10E+256")
+    assert {:number, 1, 1.0e-255} = lex_hd("10E-256")
+    assert {:number, 1, 1.0e-255} = lex_hd("+10e-256")
+    assert {:number, 1, -1.0e257} = lex_hd("-10e+256")
+    assert {:number, 1, 1.0e257} = lex_hd("10e+2_56")
+    assert {:number, 1, 1.0e257} = lex_hd("1_0e+2_56")
 
-    assert {:decimal_number, 1, "124.10e256"} = lex_hd("124.10e256")
-    assert {:decimal_number, 1, "124.10e+256"} = lex_hd("124.10e+256")
-    assert {:decimal_number, 1, "124.10e-256"} = lex_hd("124.10e-256")
-    assert {:decimal_number, 1, "+124.10e-256"} = lex_hd("+124.10e-256")
-    assert {:decimal_number, 1, "-124.10e-256"} = lex_hd("-124.10e-256")
+    assert {:number, 1, 1.241e258} = lex_hd("124.10e256")
+    assert {:number, 1, 1.241e258} = lex_hd("124.10e+256")
+    assert {:number, 1, 1.241e-254} = lex_hd("124.10e-256")
+    assert {:number, 1, 1.241e-254} = lex_hd("+124.10e-256")
+    assert {:number, 1, -1.241e-254} = lex_hd("-124.10e-256")
 
     assert {:error, %SyntaxError{line: 1, message: "invalid number literal"}} =
              Lexer.lex("124._578")
@@ -287,7 +287,7 @@ defmodule Kdl.LexerTest do
              {:whitespace, 1, " "},
              {:multiline_comment, 1},
              {:whitespace, 1, " "},
-             {:decimal_number, 1, "20"},
+             {:number, 1, 20},
              :eof
            ] = tokens
 
@@ -303,7 +303,7 @@ defmodule Kdl.LexerTest do
              {:whitespace, 5, " "},
              {:bare_identifier, 5, "child"},
              {:whitespace, 5, " "},
-             {:decimal_number, 5, "20"},
+             {:number, 5, 20},
              {:newline, 5, "\n"},
              {:right_brace, 6},
              :eof
@@ -323,7 +323,7 @@ defmodule Kdl.LexerTest do
              {:node_comment, 1},
              {:bare_identifier, 1, "node"},
              {:whitespace, 1, " "},
-             {:decimal_number, 1, "1"},
+             {:number, 1, 1},
              :eof
            ] = tokens
 
@@ -333,7 +333,7 @@ defmodule Kdl.LexerTest do
              {:bare_identifier, 1, "node"},
              {:whitespace, 1, " "},
              {:node_comment, 1},
-             {:decimal_number, 1, "1"},
+             {:number, 1, 1},
              :eof
            ] = tokens
 
@@ -342,7 +342,7 @@ defmodule Kdl.LexerTest do
     assert [
              {:bare_identifier, 1, "node"},
              {:node_comment, 1},
-             {:decimal_number, 1, "1"},
+             {:number, 1, 1},
              :eof
            ] = tokens
   end

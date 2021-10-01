@@ -15,10 +15,7 @@ defmodule Kdl.Token do
 
   @type token_type ::
           :boolean
-          | :binary_number
-          | :octal_number
-          | :decimal_number
-          | :hexadecimal_number
+          | :number
           | :string
           | :raw_string
           | :bare_identifier

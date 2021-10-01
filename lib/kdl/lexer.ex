@@ -1,4 +1,5 @@
 defmodule Kdl.Lexer do
+  alias Kdl.Number
   alias Kdl.Token
   alias Kdl.Errors.SyntaxError
 
@@ -267,55 +268,57 @@ defmodule Kdl.Lexer do
   end
 
   defp lex_number(src, iodata, ln, tks) do
-    case lex_number(src, ln, iodata) do
+    case lex_number(src, iodata) do
       {:error, message} ->
         {:error, SyntaxError.new(ln, message)}
 
-      {src, token} ->
+      {src, number} ->
+        token = Token.new(:number, ln, number)
         lex(src, ln, [token | tks])
     end
   end
 
-  defp lex_number(<<?0, ?b, src::binary>>, ln, iodata) do
+  defp lex_number(<<?0, ?b, src::binary>>, iodata) do
     case src do
       # The first character following 0b must be between 0-1
       <<c::utf8, _::binary>> when is_binary_digit(c) ->
-        {number_str, src} = parse_binary(src, [iodata | ["0b"]])
-        {src, Token.new(:binary_number, ln, number_str)}
+        {number_str, src} = parse_binary(src, iodata)
+        {src, Number.parse(number_str, :binary)}
 
       _ ->
         {:error, "invalid number literal"}
     end
   end
 
-  defp lex_number(<<?0, ?o, src::binary>>, ln, iodata) do
+  defp lex_number(<<?0, ?o, src::binary>>, iodata) do
     case src do
       # The first character following 0o must be between 0-7
       <<c::utf8, _::binary>> when is_octal_digit(c) ->
-        {number_str, src} = parse_octal(src, [iodata | ["0o"]])
-        {src, Token.new(:octal_number, ln, number_str)}
+        {number_str, src} = parse_octal(src, iodata)
+        {src, Number.parse(number_str, :octal)}
 
       _ ->
         {:error, "invalid number literal"}
     end
   end
 
-  defp lex_number(<<?0, ?x, src::binary>>, ln, iodata) do
+  defp lex_number(<<?0, ?x, src::binary>>, iodata) do
     case src do
       # The first character following 0x must be between 0-9 or a-z or A-Z
       <<c::utf8, _::binary>> when is_hexadecimal_digit(c) ->
-        {number_str, src} = parse_hexadecimal(src, [iodata | ["0x"]])
-        {src, Token.new(:hexadecimal_number, ln, number_str)}
+        {number_str, src} = parse_hexadecimal(src, iodata)
+        {src, Number.parse(number_str, :hexadecimal)}
 
       _ ->
         {:error, "invalid number literal"}
     end
   end
 
-  defp lex_number(<<c::utf8, _::binary>> = src, ln, iodata) when is_digit(c) do
+  defp lex_number(<<c::utf8, _::binary>> = src, iodata) when is_digit(c) do
     case parse_decimal_number(src, iodata, false, false) do
-      {:ok, {number_str, src}} ->
-        {src, Token.new(:decimal_number, ln, number_str)}
+      {:ok, {number_str, src, dot, exp}} ->
+        format = if dot or exp, do: :float, else: :integer
+        {src, Number.parse(number_str, format)}
 
       error ->
         error
@@ -436,34 +439,48 @@ defmodule Kdl.Lexer do
     {:error, "unterminated multiline comment"}
   end
 
-  defp parse_binary(<<c::utf8, src::binary>>, iodata) when is_binary_digit(c) or c == ?_ do
+  defp parse_binary(<<c::utf8, src::binary>>, iodata) when is_binary_digit(c) do
     parse_binary(src, [iodata | [c]])
+  end
+
+  defp parse_binary(<<?_, src::binary>>, iodata) do
+    parse_binary(src, iodata)
   end
 
   defp parse_binary(src, iodata) do
     {IO.iodata_to_binary(iodata), src}
   end
 
-  defp parse_octal(<<c::utf8, src::binary>>, iodata) when is_octal_digit(c) or c == ?_ do
+  defp parse_octal(<<c::utf8, src::binary>>, iodata) when is_octal_digit(c) do
     parse_octal(src, [iodata | [c]])
+  end
+
+  defp parse_octal(<<?_, src::binary>>, iodata) do
+    parse_octal(src, iodata)
   end
 
   defp parse_octal(src, iodata) do
     {IO.iodata_to_binary(iodata), src}
   end
 
-  defp parse_hexadecimal(<<c::utf8, src::binary>>, iodata)
-       when is_hexadecimal_digit(c) or c == ?_ do
+  defp parse_hexadecimal(<<c::utf8, src::binary>>, iodata) when is_hexadecimal_digit(c) do
     parse_hexadecimal(src, [iodata | [c]])
+  end
+
+  defp parse_hexadecimal(<<?_, src::binary>>, iodata) do
+    parse_hexadecimal(src, iodata)
   end
 
   defp parse_hexadecimal(src, iodata) do
     {IO.iodata_to_binary(iodata), src}
   end
 
-  defp parse_decimal_number(<<c::utf8, src::binary>>, iodata, dot, exp)
-       when is_digit(c) or c == ?_ do
+  defp parse_decimal_number(<<c::utf8, src::binary>>, iodata, dot, exp) when is_digit(c) do
     parse_decimal_number(src, [iodata | [c]], dot, exp)
+  end
+
+  defp parse_decimal_number(<<?_, src::binary>>, iodata, dot, exp) do
+    parse_decimal_number(src, iodata, dot, exp)
   end
 
   # This matches when we have already seen a "." in the number. For example:
@@ -473,8 +490,8 @@ defmodule Kdl.Lexer do
   # Since 10.01 is a valid number literal and .[digit] is a valid identifier,
   # this isn't an error in the lexer. Therefore, we return the number parsed
   # up until the second "." (10.01) as our valid number literal.
-  defp parse_decimal_number(<<?., _::binary>> = src, iodata, true, _exp) do
-    {:ok, {IO.iodata_to_binary(iodata), src}}
+  defp parse_decimal_number(<<?., _::binary>> = src, iodata, true, exp) do
+    {:ok, {IO.iodata_to_binary(iodata), src, true, exp}}
   end
 
   # This matches when a character other than a digit (0-9) immediately follows
@@ -509,9 +526,9 @@ defmodule Kdl.Lexer do
   # Since 2e10 is a valid number literal and "e" is the start of a valid identifier,
   # this isn't an error in the lexer. Therefore, we return the number parsed up until
   # the second e (2e10) as our valid number literal.
-  defp parse_decimal_number(<<c::utf8, _::binary>> = src, iodata, _dot, true)
+  defp parse_decimal_number(<<c::utf8, _::binary>> = src, iodata, dot, true)
        when is_exp_char(c) do
-    {:ok, {IO.iodata_to_binary(iodata), src}}
+    {:ok, {IO.iodata_to_binary(iodata), src, dot, true}}
   end
 
   # This matches when we have not already encountered an exponent in the number
@@ -551,8 +568,8 @@ defmodule Kdl.Lexer do
     {:error, "invalid number literal"}
   end
 
-  defp parse_decimal_number(src, iodata, _dot, _exp) do
-    {:ok, {IO.iodata_to_binary(iodata), src}}
+  defp parse_decimal_number(src, iodata, dot, exp) do
+    {:ok, {IO.iodata_to_binary(iodata), src, dot, exp}}
   end
 
   defp parse_unicode_escape(<<?", _::binary>>, _iodata, _length) do
