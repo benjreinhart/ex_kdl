@@ -25,6 +25,15 @@ IO.inspect(nodes)
 #     ]
 #   }
 # ]
+
+{:ok, encoded} = Kdl.encode(nodes)
+
+IO.puts(encoded)
+# node 100 10000 key="value" {
+#     child_1
+#     child_2
+# }
+#
 ```
 
 #### decode(binary()) :: {:ok, list(map())} | {:error, any()}
@@ -39,3 +48,7 @@ Attempts to decode the given binary. If the binary is a valid KDL document, then
   children: list(map()),
 }
 ```
+
+#### encode(list(map)) :: {:ok, binary()} | {:error, any()}
+
+Attemps to encode the given KDL nodes.

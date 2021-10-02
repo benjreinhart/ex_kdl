@@ -1,4 +1,5 @@
 defmodule Kdl do
+  alias Kdl.Encoder
   alias Kdl.Lexer
   alias Kdl.Parser
 
@@ -11,6 +12,14 @@ defmodule Kdl do
   end
 
   def decode(_) do
-    {:error, "Argument to decode/1 must be a kdl-encoded binary"}
+    {:error, "Argument to decode/1 must be a KDL-encoded binary"}
+  end
+
+  def encode(nodes) when is_list(nodes) do
+    Encoder.encode(nodes)
+  end
+
+  def encode(_) do
+    {:error, "Argument to encode/1 must be a list of KDL nodes"}
   end
 end
