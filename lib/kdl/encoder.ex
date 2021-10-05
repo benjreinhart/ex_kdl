@@ -85,9 +85,10 @@ defmodule Kdl.Encoder do
     [iodata | '\n']
   end
 
-  defp encode_identifier(value) do
-    encode_string(value, true)
-  end
+  defp encode_identifier("null"), do: ~s|"null"|
+  defp encode_identifier("true"), do: ~s|"true"|
+  defp encode_identifier("false"), do: ~s|"false"|
+  defp encode_identifier(value), do: encode_string(value, true)
 
   defp encode_value(value) when is_binary(value), do: encode_string(value, false)
   defp encode_value(value) when is_number(value), do: to_string(value)
