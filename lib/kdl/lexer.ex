@@ -3,99 +3,20 @@ defmodule Kdl.Lexer do
   alias Kdl.Errors.SyntaxError
   alias Kdl.Utils.Number
 
-  # Whitespace characters.
-  #
-  #     https://github.com/kdl-org/kdl/blob/1.0.0/SPEC.md#whitespace
-  #
-  defguardp is_whitespace(char)
-            when char in [
-                   0x0009,
-                   0x0020,
-                   0x00A0,
-                   0x1680,
-                   0x2000,
-                   0x2001,
-                   0x2002,
-                   0x2003,
-                   0x2004,
-                   0x2005,
-                   0x2006,
-                   0x2007,
-                   0x2008,
-                   0x2009,
-                   0x200A,
-                   0x202F,
-                   0x205F,
-                   0x3000
-                 ]
-
-  # Newline characters.
-  #
-  # Note that CRLF (\r\n) should be treated as a single newline character
-  # and will therefore need to be explicitly handled separately from this guard.
-  #
-  #     https://github.com/kdl-org/kdl/blob/1.0.0/SPEC.md#newline
-  #
-  defguardp is_newline(char) when char in [0x000A, 0x000D, 0x000C, 0x0085, 0x2028, 0x2029]
-
-  defguardp is_bom_char(char) when char == 0xFEFF
-
-  # Non-identifier characters.
-  #
-  #     https://github.com/kdl-org/kdl/blob/16269d432590d440ce07c0623772c89eb302f2c2/SPEC.md#non-identifier-characters
-  #
-  defguardp is_non_identifier_char(char)
-            when char in [
-                   # "
-                   0x22,
-                   # (
-                   0x28,
-                   # )
-                   0x29,
-                   # ,
-                   0x2C,
-                   # /
-                   0x2F,
-                   # ;
-                   0x3B,
-                   # <
-                   0x3C,
-                   # =
-                   0x3D,
-                   # >
-                   0x3E,
-                   # [
-                   0x5B,
-                   # \
-                   0x5C,
-                   # ]
-                   0x5D,
-                   # {
-                   0x7B,
-                   # }
-                   0x7D
-                 ] or
-                   char < 0x21 or
-                   char > 0x10FFFF or
-                   is_whitespace(char) or
-                   is_newline(char) or
-                   is_bom_char(char)
-
-  defguardp is_identifier_char(char) when not is_non_identifier_char(char)
-
-  defguardp is_initial_identifier_char(char) when char not in ?0..?9 and is_identifier_char(char)
-
-  defguardp is_sign_char(char) when char in '+-'
-
-  defguardp is_exp_char(char) when char in 'eE'
-
-  defguardp is_digit(char) when char in ?0..?9
-
-  defguardp is_binary_digit(char) when char in ?0..?1
-
-  defguardp is_octal_digit(char) when char in ?0..?7
-
-  defguardp is_hexadecimal_digit(char) when is_digit(char) or char in ?a..?f or char in ?A..?F
+  import Kdl.Chars,
+    only: [
+      is_bom_char: 1,
+      is_newline_char: 1,
+      is_whitespace_char: 1,
+      is_sign_char: 1,
+      is_exp_char: 1,
+      is_binary_char: 1,
+      is_octal_char: 1,
+      is_decimal_char: 1,
+      is_hexadecimal_char: 1,
+      is_identifier_char: 1,
+      is_initial_identifier_char: 1
+    ]
 
   @spec lex(binary()) :: {:ok, list(term())} | {:error, term()}
 
@@ -103,13 +24,13 @@ defmodule Kdl.Lexer do
     lex(encoded, 1, [])
   end
 
-  defp lex(<<c::utf8, _::binary>> = src, ln, tks) when is_newline(c) do
+  defp lex(<<c::utf8, _::binary>> = src, ln, tks) when is_newline_char(c) do
     {src, char} = get_newline_char(src)
     token = Token.new(:newline, ln, char)
     lex(src, ln + 1, [token | tks])
   end
 
-  defp lex(<<c::utf8, src::binary>>, ln, tks) when is_whitespace(c) do
+  defp lex(<<c::utf8, src::binary>>, ln, tks) when is_whitespace_char(c) do
     token = Token.new(:whitespace, ln, <<c::utf8>>)
     lex(src, ln, [token | tks])
   end
@@ -173,12 +94,12 @@ defmodule Kdl.Lexer do
     lex(src, ln, [token | tks])
   end
 
-  defp lex(<<c::utf8, _::binary>> = src, ln, tks) when is_digit(c) do
+  defp lex(<<c::utf8, _::binary>> = src, ln, tks) when is_decimal_char(c) do
     lex_number(src, [], ln, tks)
   end
 
   defp lex(<<c1::utf8, c2::utf8, _::binary>> = src, ln, tks)
-       when is_sign_char(c1) and is_digit(c2) do
+       when is_sign_char(c1) and is_decimal_char(c2) do
     <<_::utf8, src::binary>> = src
     lex_number(src, [c1], ln, tks)
   end
@@ -255,7 +176,7 @@ defmodule Kdl.Lexer do
     lex(src, ln, [token | tks])
   end
 
-  defp lex_identifier(<<c::utf8, _::binary>> = src, iodata) when is_non_identifier_char(c) do
+  defp lex_identifier(<<c::utf8, _::binary>> = src, iodata) when not is_identifier_char(c) do
     {src, IO.iodata_to_binary(iodata)}
   end
 
@@ -281,7 +202,7 @@ defmodule Kdl.Lexer do
   defp lex_number(<<?0, ?b, src::binary>>, iodata) do
     case src do
       # The first character following 0b must be between 0-1
-      <<c::utf8, _::binary>> when is_binary_digit(c) ->
+      <<c::utf8, _::binary>> when is_binary_char(c) ->
         {number_str, src} = parse_binary(src, iodata)
         {src, Number.parse(number_str, :binary)}
 
@@ -293,7 +214,7 @@ defmodule Kdl.Lexer do
   defp lex_number(<<?0, ?o, src::binary>>, iodata) do
     case src do
       # The first character following 0o must be between 0-7
-      <<c::utf8, _::binary>> when is_octal_digit(c) ->
+      <<c::utf8, _::binary>> when is_octal_char(c) ->
         {number_str, src} = parse_octal(src, iodata)
         {src, Number.parse(number_str, :octal)}
 
@@ -305,7 +226,7 @@ defmodule Kdl.Lexer do
   defp lex_number(<<?0, ?x, src::binary>>, iodata) do
     case src do
       # The first character following 0x must be between 0-9 or a-z or A-Z
-      <<c::utf8, _::binary>> when is_hexadecimal_digit(c) ->
+      <<c::utf8, _::binary>> when is_hexadecimal_char(c) ->
         {number_str, src} = parse_hexadecimal(src, iodata)
         {src, Number.parse(number_str, :hexadecimal)}
 
@@ -314,7 +235,7 @@ defmodule Kdl.Lexer do
     end
   end
 
-  defp lex_number(<<c::utf8, _::binary>> = src, iodata) when is_digit(c) do
+  defp lex_number(<<c::utf8, _::binary>> = src, iodata) when is_decimal_char(c) do
     case parse_decimal(src, iodata, false, false) do
       {:ok, {number_str, src, dot, exp}} ->
         format = if dot or exp, do: :float, else: :integer
@@ -375,7 +296,7 @@ defmodule Kdl.Lexer do
     end
   end
 
-  defp lex_string(<<c::utf8, _::binary>> = src, ln, iodata) when is_newline(c) do
+  defp lex_string(<<c::utf8, _::binary>> = src, ln, iodata) when is_newline_char(c) do
     {src, char} = get_newline_char(src)
     lex_string(src, ln + 1, [iodata | [char]])
   end
@@ -399,7 +320,7 @@ defmodule Kdl.Lexer do
   end
 
   defp lex_raw_string(<<c::utf8, _::binary>> = src, ln, iodata, number_sign_count)
-       when is_newline(c) do
+       when is_newline_char(c) do
     {src, char} = get_newline_char(src)
     lex_raw_string(src, ln + 1, [iodata | [char]], number_sign_count)
   end
@@ -426,7 +347,7 @@ defmodule Kdl.Lexer do
     lex_multiline_comment(src, ln, count + 1)
   end
 
-  defp lex_multiline_comment(<<c::utf8, _::binary>> = src, ln, count) when is_newline(c) do
+  defp lex_multiline_comment(<<c::utf8, _::binary>> = src, ln, count) when is_newline_char(c) do
     {src, _char} = get_newline_char(src)
     lex_multiline_comment(src, ln + 1, count)
   end
@@ -439,7 +360,7 @@ defmodule Kdl.Lexer do
     {:error, "unterminated multiline comment"}
   end
 
-  defp parse_binary(<<c::utf8, src::binary>>, iodata) when is_binary_digit(c) do
+  defp parse_binary(<<c::utf8, src::binary>>, iodata) when is_binary_char(c) do
     parse_binary(src, [iodata | [c]])
   end
 
@@ -451,7 +372,7 @@ defmodule Kdl.Lexer do
     {IO.iodata_to_binary(iodata), src}
   end
 
-  defp parse_octal(<<c::utf8, src::binary>>, iodata) when is_octal_digit(c) do
+  defp parse_octal(<<c::utf8, src::binary>>, iodata) when is_octal_char(c) do
     parse_octal(src, [iodata | [c]])
   end
 
@@ -463,7 +384,7 @@ defmodule Kdl.Lexer do
     {IO.iodata_to_binary(iodata), src}
   end
 
-  defp parse_hexadecimal(<<c::utf8, src::binary>>, iodata) when is_hexadecimal_digit(c) do
+  defp parse_hexadecimal(<<c::utf8, src::binary>>, iodata) when is_hexadecimal_char(c) do
     parse_hexadecimal(src, [iodata | [c]])
   end
 
@@ -475,7 +396,7 @@ defmodule Kdl.Lexer do
     {IO.iodata_to_binary(iodata), src}
   end
 
-  defp parse_decimal(<<c::utf8, src::binary>>, iodata, dot, exp) when is_digit(c) do
+  defp parse_decimal(<<c::utf8, src::binary>>, iodata, dot, exp) when is_decimal_char(c) do
     parse_decimal(src, [iodata | [c]], dot, exp)
   end
 
@@ -502,7 +423,8 @@ defmodule Kdl.Lexer do
   # In this case, 10. is the start of a valid number literal, but it must have
   # at least one digit after the "." to be valid. Since that isn't the case here,
   # we return an error indicating the syntax is invalid.
-  defp parse_decimal(<<?., c::utf8, _::binary>>, _iodata, false, _exp) when not is_digit(c) do
+  defp parse_decimal(<<?., c::utf8, _::binary>>, _iodata, false, _exp)
+       when not is_decimal_char(c) do
     {:error, "invalid number literal"}
   end
 
@@ -537,7 +459,7 @@ defmodule Kdl.Lexer do
   # This is the start of a valid exponent part of a number literal and so we
   # continue parsing.
   defp parse_decimal(<<c1::utf8, c2::utf8, src::binary>>, iodata, dot, false)
-       when is_exp_char(c1) and is_digit(c2) do
+       when is_exp_char(c1) and is_decimal_char(c2) do
     parse_decimal(src, [iodata | [c1, c2]], dot, true)
   end
 
@@ -550,7 +472,7 @@ defmodule Kdl.Lexer do
   # This is the start of a valid exponent part of a number literal and so we
   # continue parsing.
   defp parse_decimal(<<c1::utf8, c2::utf8, c3::utf8, src::binary>>, iodata, dot, false)
-       when is_exp_char(c1) and is_sign_char(c2) and is_digit(c3) do
+       when is_exp_char(c1) and is_sign_char(c2) and is_decimal_char(c3) do
     parse_decimal(src, [iodata | [c1, c2, c3]], dot, true)
   end
 
@@ -596,7 +518,7 @@ defmodule Kdl.Lexer do
   end
 
   defp parse_unicode_escape(<<c::utf8, src::binary>>, iodata, length)
-       when is_hexadecimal_digit(c) do
+       when is_hexadecimal_char(c) do
     parse_unicode_escape(src, [iodata | [c]], length + 1)
   end
 
@@ -616,7 +538,7 @@ defmodule Kdl.Lexer do
     {src, count}
   end
 
-  defp advance_until_newline(<<c::utf8, _::binary>> = src) when is_newline(c) do
+  defp advance_until_newline(<<c::utf8, _::binary>> = src) when is_newline_char(c) do
     src
   end
 
@@ -636,7 +558,7 @@ defmodule Kdl.Lexer do
     {src, <<?\r, ?\n>>}
   end
 
-  defp get_newline_char(<<c::utf8, src::binary>>) when is_newline(c) do
+  defp get_newline_char(<<c::utf8, src::binary>>) when is_newline_char(c) do
     {src, <<c::utf8>>}
   end
 end
