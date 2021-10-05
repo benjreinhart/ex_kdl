@@ -73,15 +73,12 @@ defmodule Kdl.Parser do
       if is_commented do
         {:match, tokens, nil}
       else
-        {properties, values} =
-          props_and_vals
-          |> Enum.reject(&is_nil/1)
-          |> Enum.split_with(&is_tuple/1)
+        {properties, values} = process_props_and_vals(props_and_vals)
 
         node = %{
           name: name,
           values: values,
-          properties: Map.new(properties),
+          properties: properties,
           children: List.flatten(children)
         }
 
@@ -128,8 +125,14 @@ defmodule Kdl.Parser do
 
   defp node_value(tokens) do
     with {:match, tokens, _} <- tokens |> zero_or_one(&type_annotation/1),
-         {:match, _, _} = match <- tokens |> one(&value/1) do
-      match
+         {:match, tokens, val} <- tokens |> one(&value/1) do
+      # Disambiguate nil as a result of a nomatch vs nil as a result of a null token.
+      # TODO: cleanup parser, this is a hack.
+      if is_nil(val) do
+        {:match, tokens, :null}
+      else
+        {:match, tokens, val}
+      end
     end
   end
 
@@ -207,5 +210,31 @@ defmodule Kdl.Parser do
 
   defp type_annotation(_tokens) do
     :nomatch
+  end
+
+  defp process_props_and_vals(props_and_vals) do
+    process_props_and_vals(props_and_vals, [], [])
+  end
+
+  defp process_props_and_vals([property | rest], props, vals) when is_tuple(property) do
+    property =
+      case property do
+        {key, :null} ->
+          {key, nil}
+
+        property ->
+          property
+      end
+
+    process_props_and_vals(rest, [property | props], vals)
+  end
+
+  defp process_props_and_vals([value | rest], props, vals) do
+    value = if value == :null, do: nil, else: value
+    process_props_and_vals(rest, props, [value | vals])
+  end
+
+  defp process_props_and_vals([], props, vals) do
+    {Map.new(props), Enum.reverse(vals)}
   end
 end
