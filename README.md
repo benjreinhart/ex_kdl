@@ -15,13 +15,13 @@ _Note: this library is a WIP and subject to change._
 
 IO.inspect(nodes)
 # [
-#   %{
+#   %Kdl.Node{
 #     name: "node",
 #     values: [100, 10000],
 #     properties: %{"key" => "value"},
 #     children: [
-#       %{children: [], name: "child_1", properties: %{}, values: []},
-#       %{children: [], name: "child_2", properties: %{}, values: []}
+#       %Kdl.Node{children: [], name: "child_1", properties: %{}, values: []},
+#       %Kdl.Node{children: [], name: "child_2", properties: %{}, values: []}
 #     ]
 #   }
 # ]
@@ -36,19 +36,27 @@ IO.puts(encoded)
 #
 ```
 
-#### decode(binary()) :: {:ok, list(map())} | {:error, any()}
+### Types
 
-Attempts to decode the given binary. If the binary is a valid KDL document, then `{:ok, nodes}` is returned where nodes is a list of maps. A node has the following shape:
+#### Kdl.Node.t()
+
+The type of a KDL node. Defined as
 
 ```elixir
-%{
-  name: binary(),
-  values: list(any())
-  properties: map(),
-  children: list(map()),
+@type t :: %Kdl.Node{
+  name: binary,
+  values: list(any),
+  properties: %{binary => any},
+  children: list(t)
 }
 ```
 
-#### encode(list(map)) :: {:ok, binary()} | {:error, any()}
+### Functions
 
-Attemps to encode the given KDL nodes.
+#### Kdl.decode(binary()) :: {:ok, list(Kdl.Node.t())} | {:error, any()}
+
+Attempts to decode the given binary. If the binary is a valid KDL document, then `{:ok, nodes}` is returned where nodes is a list of `Kdl.Node` structs.
+
+#### Kdl.encode(list(Kdl.Node.t())) :: {:ok, binary()}
+
+Encodes the given KDL nodes.

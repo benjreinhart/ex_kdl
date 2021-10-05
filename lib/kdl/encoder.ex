@@ -1,5 +1,6 @@
 defmodule Kdl.Encoder do
   alias Kdl.Chars
+  alias Kdl.Node
 
   @tab_size 4
 
@@ -7,14 +8,7 @@ defmodule Kdl.Encoder do
   @kw_false "false"
   @kw_null "null"
 
-  @type kdl_node :: %{
-          :children => kdl_node,
-          :name => binary,
-          :properties => map,
-          :values => list(any)
-        }
-
-  @spec encode(list(kdl_node)) :: {:ok, binary}
+  @spec encode(list(Node.t())) :: {:ok, binary}
   def encode(nodes) when is_list(nodes) do
     {:ok, encode(nodes, [])}
   end

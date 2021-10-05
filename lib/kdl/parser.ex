@@ -1,4 +1,5 @@
 defmodule Kdl.Parser do
+  alias Kdl.Node
   alias Kdl.Token
 
   import Kdl.Token, only: [is_type: 2]
@@ -24,7 +25,7 @@ defmodule Kdl.Parser do
   defguardp is_identifier(token)
             when is_type(token, :bare_identifier) or is_type(token, :string)
 
-  @spec parse(list(tuple)) :: {:ok, list(map())} | {:error, binary()}
+  @spec parse(list(tuple)) :: {:ok, list(Node.t())} | {:error, binary()}
 
   def parse(tokens) do
     case parse_nodes(tokens) do
@@ -75,14 +76,14 @@ defmodule Kdl.Parser do
       else
         {properties, values} = process_props_and_vals(props_and_vals)
 
-        node = %{
+        kdl_node = %Node{
           name: name,
           values: values,
           properties: properties,
           children: List.flatten(children)
         }
 
-        {:match, tokens, node}
+        {:match, tokens, kdl_node}
       end
     end
   end
