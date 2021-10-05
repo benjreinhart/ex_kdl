@@ -1,4 +1,6 @@
 defmodule Kdl.Encoder do
+  alias Kdl.Chars
+
   @tab_size 4
 
   @kw_true "true"
@@ -103,86 +105,30 @@ defmodule Kdl.Encoder do
     end
   end
 
-  escape_chars = %{
-    ?\b => "\\b",
-    ?\t => "\\t",
-    ?\n => "\\n",
-    ?\f => "\\f",
-    ?\r => "\\r",
-    ?" => "\\\"",
-    ?/ => "\/",
-    ?\\ => "\\"
-  }
-
-  whitespace_chars = [
-    0x0009,
-    0x0020,
-    0x00A0,
-    0x1680,
-    0x2000,
-    0x2001,
-    0x2002,
-    0x2003,
-    0x2004,
-    0x2005,
-    0x2006,
-    0x2007,
-    0x2008,
-    0x2009,
-    0x200A,
-    0x202F,
-    0x205F,
-    0x3000
-  ]
-
-  newline_chars = [
-    0x000A,
-    0x000D,
-    0x000C,
-    0x0085,
-    0x2028,
-    0x2029
-  ]
-
-  non_identifier_chars = [
-    ?",
-    ?(,
-    ?),
-    ?,,
-    ?/,
-    ?;,
-    ?<,
-    ?=,
-    ?>,
-    ?[,
-    ?\\,
-    ?],
-    ?{,
-    ?}
-  ]
+  invalid_bare_identifier_range = Range.new(0, Chars.min_valid_identifier_char() - 1)
 
   invalid_bare_identifier_chars =
-    (Enum.to_list(0..0x20) ++ whitespace_chars ++ newline_chars ++ non_identifier_chars)
+    (Enum.to_list(invalid_bare_identifier_range) ++ Chars.non_identifier_chars())
     |> Enum.uniq()
-    |> Enum.reject(&Map.has_key?(escape_chars, &1))
+    |> Enum.reject(&Map.has_key?(Chars.escape_char_map(), &1))
     |> Enum.sort()
 
-  {invalid_bare_identifier_byte, invalid_bare_identifier_bytes} =
+  {single_byte_invalid_bare_identifier_chars, multi_byte_invalid_bare_identifier_chars} =
     Enum.split_with(
       invalid_bare_identifier_chars,
-      fn char -> char <= 127 end
+      fn char -> char <= Chars.max_1_byte_char() end
     )
 
-  for byte <- 0..127 do
+  for byte <- 0..Chars.max_1_byte_char() do
     cond do
-      Map.has_key?(escape_chars, byte) ->
+      Map.has_key?(Chars.escape_char_map(), byte) ->
         defp encode_string(<<unquote(byte), rest::bits>>, original, acc, skip, len, _) do
           part = binary_part(original, skip, len)
-          acc = [acc, part | [unquote(Map.fetch!(escape_chars, byte))]]
+          acc = [acc, part | [unquote(Map.fetch!(Chars.escape_char_map(), byte))]]
           encode_string(rest, original, acc, skip + len + 1, 0, false)
         end
 
-      Enum.member?(invalid_bare_identifier_byte, byte) ->
+      Enum.member?(single_byte_invalid_bare_identifier_chars, byte) ->
         defp encode_string(<<unquote(byte), rest::bits>>, original, acc, skip, len, _) do
           encode_string(rest, original, acc, skip, len + 1, false)
         end
@@ -201,32 +147,32 @@ defmodule Kdl.Encoder do
     end
   end
 
-  for non_ident_char <- invalid_bare_identifier_bytes do
-    num_bytes =
-      cond do
-        non_ident_char <= 0x7FF -> 2
-        non_ident_char <= 0xFFFF -> 3
-        true -> 4
-      end
+  for invalid_bare_identifier_char <- multi_byte_invalid_bare_identifier_chars do
+    char_byte_length = Chars.get_char_byte_length(invalid_bare_identifier_char)
 
     defp encode_string(<<char::utf8, rest::bits>>, original, acc, skip, len, _)
-         when char === unquote(non_ident_char) do
-      encode_string(rest, original, acc, skip, len + unquote(num_bytes), false)
+         when char === unquote(invalid_bare_identifier_char) do
+      encode_string(rest, original, acc, skip, len + unquote(char_byte_length), false)
     end
   end
 
   defp encode_string(<<char::utf8, rest::bits>>, original, acc, skip, len, valid_bare_identifier)
-       when char <= 0x7FF do
+       when char <= unquote(Chars.max_2_byte_char()) do
     encode_string(rest, original, acc, skip, len + 2, valid_bare_identifier)
   end
 
   defp encode_string(<<char::utf8, rest::bits>>, original, acc, skip, len, valid_bare_identifier)
-       when char <= 0xFFFF do
+       when char <= unquote(Chars.max_3_byte_char()) do
     encode_string(rest, original, acc, skip, len + 3, valid_bare_identifier)
   end
 
-  defp encode_string(<<_char::utf8, rest::bits>>, original, acc, skip, len, valid_bare_identifier) do
+  defp encode_string(<<char::utf8, rest::bits>>, original, acc, skip, len, valid_bare_identifier)
+       when char <= unquote(Chars.max_valid_identifier_char()) do
     encode_string(rest, original, acc, skip, len + 4, valid_bare_identifier)
+  end
+
+  defp encode_string(<<_char::utf8, rest::bits>>, original, acc, skip, len, _) do
+    encode_string(rest, original, acc, skip, len + 4, false)
   end
 
   defp encode_string(<<>>, original, _acc, 0, _len, valid_bare_identifier) do
