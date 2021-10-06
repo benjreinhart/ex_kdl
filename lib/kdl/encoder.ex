@@ -43,6 +43,7 @@ defmodule Kdl.Encoder do
 
   defp encode_properties(iodata, node) do
     node.properties
+    |> Enum.sort_by(fn {key, _value} -> key end)
     |> Enum.reduce(iodata, fn {key, value}, iodata ->
       pair = [?\s, encode_identifier(key), ?=, encode_value(value)]
       [iodata | pair]
