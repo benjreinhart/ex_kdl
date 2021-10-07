@@ -19,6 +19,10 @@ defmodule Kdl.Encoder do
     encode(nodes, encode_node(node, 0, iodata))
   end
 
+  defp encode([], []) do
+    "\n"
+  end
+
   defp encode([], iodata) do
     IO.iodata_to_binary(iodata)
   end
