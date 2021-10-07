@@ -60,3 +60,23 @@ Attempts to decode the given binary. If the binary is a valid KDL document, then
 #### Kdl.encode(list(Kdl.Node.t())) :: {:ok, binary()}
 
 Encodes the given KDL nodes.
+
+## Developing
+
+This repo includes the [kdl-org/kdl](https://github.com/kdl-org/kdl) repo listed as a submodule for testing purposes.
+
+```
+git clone --recurse-submodules <this repo>
+```
+
+Or, if already cloned, initialize the submodule with:
+
+```
+git submodule update --init
+```
+
+To run tests:
+
+```
+mix test
+```
