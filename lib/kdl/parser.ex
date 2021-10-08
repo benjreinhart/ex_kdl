@@ -214,7 +214,7 @@ defmodule Kdl.Parser do
   end
 
   defp process_props_and_vals(props_and_vals) do
-    process_props_and_vals(props_and_vals, [], [])
+    process_props_and_vals(props_and_vals, %{}, [])
   end
 
   defp process_props_and_vals([property | rest], props, vals) when is_tuple(property) do
@@ -225,10 +225,10 @@ defmodule Kdl.Parser do
         process_props_and_vals(rest, props, vals)
 
       {key, :null} ->
-        process_props_and_vals(rest, [{key, nil} | props], vals)
+        process_props_and_vals(rest, Map.put(props, key, nil), vals)
 
-      property ->
-        process_props_and_vals(rest, [property | props], vals)
+      {key, value} ->
+        process_props_and_vals(rest, Map.put(props, key, value), vals)
     end
   end
 
@@ -248,6 +248,6 @@ defmodule Kdl.Parser do
   end
 
   defp process_props_and_vals([], props, vals) do
-    {Map.new(props), Enum.reverse(vals)}
+    {props, Enum.reverse(vals)}
   end
 end
