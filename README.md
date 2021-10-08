@@ -80,3 +80,11 @@ To run tests:
 ```
 mix test
 ```
+
+### Running a specific test
+
+The test runner will execute the kdl-org tests. To run a specific test, use the `--only` option and pass it the `path` (where `path` is `input/<filename>.kdl`). For example:
+
+```
+mix test --only input/raw_string_just_backslash.kdl
+```
