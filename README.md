@@ -75,15 +75,13 @@ Or, if already cloned, initialize the submodule with:
 git submodule update --init
 ```
 
-To run tests:
+### Running tests
 
 ```
 mix test
 ```
 
-### Running a specific test
-
-The test runner will execute the kdl-org tests. To run a specific test, use the `--only` option and pass it the `path` (where `path` is `input/<filename>.kdl`). For example:
+To run a specific test from the kdl-org test suite, use the `--only` option and pass it the `path` (where `path` is `input/<filename>.kdl`). For example:
 
 ```
 mix test --only input/raw_string_just_backslash.kdl
