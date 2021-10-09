@@ -262,7 +262,7 @@ defmodule Kdl.Lexer do
         lex_string(src, ln, [iodata | [?\t]])
 
       ?\\ ->
-        lex_string(src, ln, [iodata | [?\\]])
+        lex_string(src, ln, [iodata | [?\\, ?\\]])
 
       ?/ ->
         lex_string(src, ln, [iodata | [?/]])
@@ -323,6 +323,10 @@ defmodule Kdl.Lexer do
        when is_newline_char(c) do
     {src, char} = get_newline_char(src)
     lex_raw_string(src, ln + 1, [iodata | [char]], number_sign_count)
+  end
+
+  defp lex_raw_string(<<?\\, src::binary>>, ln, iodata, number_sign_count) do
+    lex_raw_string(src, ln, [iodata | [?\\, ?\\]], number_sign_count)
   end
 
   defp lex_raw_string(<<c::utf8, src::binary>>, ln, iodata, number_sign_count) do

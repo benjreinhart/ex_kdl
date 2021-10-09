@@ -117,17 +117,17 @@ defmodule Kdl.LexerTest do
 
   test "correctly parses raw strings" do
     assert {:string, 1, "hello world"} = lex_hd("r\"hello world\"")
-    assert {:string, 1, "hello\\nworld"} = lex_hd("r\"hello\\nworld\"")
-    assert {:string, 1, "hello\\tworld"} = lex_hd("r\"hello\\tworld\"")
+    assert {:string, 1, "hello\\\\nworld"} = lex_hd("r\"hello\\nworld\"")
+    assert {:string, 1, "hello\\\\tworld"} = lex_hd("r\"hello\\tworld\"")
     assert {:string, 1, "hello\nworld"} = lex_hd("r\"hello\nworld\"")
     assert {:string, 1, "hello\tworld"} = lex_hd("r\"hello\tworld\"")
 
     assert {:string, 1, "hello world"} = lex_hd("r#\"hello world\"#")
-    assert {:string, 1, "hello\\nworld"} = lex_hd("r#\"hello\\nworld\"#")
-    assert {:string, 1, "hello\\tworld"} = lex_hd("r#\"hello\\tworld\"#")
+    assert {:string, 1, "hello\\\\nworld"} = lex_hd("r#\"hello\\nworld\"#")
+    assert {:string, 1, "hello\\\\tworld"} = lex_hd("r#\"hello\\tworld\"#")
     assert {:string, 1, "hello\nworld"} = lex_hd("r#\"hello\nworld\"#")
     assert {:string, 1, "hello\tworld"} = lex_hd("r#\"hello\tworld\"#")
-    assert {:string, 1, "hello\\t\"world\""} = lex_hd("r#\"hello\\t\"world\"\"#")
+    assert {:string, 1, "hello\\\\t\"world\""} = lex_hd("r#\"hello\\t\"world\"\"#")
 
     assert {:string, 1, "hello world"} = lex_hd("r##\"hello world\"##")
     assert {:string, 1, "hello \"# world"} = lex_hd("r##\"hello \"# world\"##")
