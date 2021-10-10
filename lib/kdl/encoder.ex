@@ -4,6 +4,8 @@ defmodule Kdl.Encoder do
 
   import Kdl.Chars, only: [is_initial_identifier_char: 1]
 
+  import Decimal, only: [is_decimal: 1]
+
   @tab_size 4
 
   @kw_true "true"
@@ -98,7 +100,7 @@ defmodule Kdl.Encoder do
   defp encode_identifier(value), do: encode_string(value, false)
 
   defp encode_value(value) when is_binary(value), do: encode_string(value, false)
-  defp encode_value(value) when is_number(value), do: to_string(value)
+  defp encode_value(value) when is_decimal(value), do: to_string(value)
   defp encode_value(true), do: @kw_true
   defp encode_value(false), do: @kw_false
   defp encode_value(nil), do: @kw_null
