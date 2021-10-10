@@ -282,6 +282,15 @@ defmodule Kdl.LexerTest do
 
     assert {:error, %SyntaxError{line: 1, message: "invalid number literal"}} =
              Lexer.lex("10e+_256")
+
+    assert {:error, %SyntaxError{line: 1, message: "invalid number literal"}} = Lexer.lex("1.")
+
+    assert {:error, %SyntaxError{line: 1, message: "invalid number literal"}} = Lexer.lex("1.0e")
+    assert {:error, %SyntaxError{line: 1, message: "invalid number literal"}} = Lexer.lex("1.0e+")
+    assert {:error, %SyntaxError{line: 1, message: "invalid number literal"}} = Lexer.lex("1.0e-")
+    assert {:error, %SyntaxError{line: 1, message: "invalid number literal"}} = Lexer.lex("1.0E")
+    assert {:error, %SyntaxError{line: 1, message: "invalid number literal"}} = Lexer.lex("1.0E+")
+    assert {:error, %SyntaxError{line: 1, message: "invalid number literal"}} = Lexer.lex("1.0E-")
   end
 
   test "correctly parses line comments" do

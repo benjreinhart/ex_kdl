@@ -431,11 +431,21 @@ defmodule Kdl.Lexer do
     {:error, "invalid number literal"}
   end
 
+  # This matches when a dot is immediately followed by EOF.
+  #
+  #     10.
+  #
+  # In this case, the numeric literal is incomplete and is
+  # therefore an error.
+  defp parse_decimal(<<?.>>, _iodata, _dot, _exp) do
+    {:error, "invalid number literal"}
+  end
+
   # At this point, we know that we:
   #
   #     1. Haven't already seen a "." in this number literal
   #     2. We know that the character after the "." is a digit
-  #        (we handled the case where it isn't above)
+  #        (we handled the cases where it isn't above)
   #
   # So, as long we are not in the exponent part of a number literal,
   # this is a valid placement of a "." inside a number literal.
@@ -481,7 +491,7 @@ defmodule Kdl.Lexer do
 
   # This matches when we have not already encountered an exponent in the number
   # and we see an "e" (or "E") followed by some character that is not a sign or
-  # a digit.
+  # a digit (including EOF).
   #
   #     2e_2
   #      ^^
