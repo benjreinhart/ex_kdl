@@ -64,7 +64,7 @@ defmodule Kdl.Parser do
 
   defp parse_node(tokens) do
     with {:match, tokens, is_commented} <- tokens |> zero_or_one(&node_comment/1),
-         {:match, tokens, _} <- tokens |> zero_or_more(&node_space/1),
+         {:match, tokens, _} <- tokens |> zero_or_more(&whitespace/1),
          {:match, tokens, _} <- tokens |> zero_or_one(&type_annotation/1),
          {:match, tokens, name} <- tokens |> one(&identifier/1),
          {:match, tokens, props_and_vals} <- tokens |> zero_or_more(&node_props_and_vals/1),
