@@ -11,7 +11,7 @@ Blocking TODOs are captured in [#1](https://github.com/benjreinhart/kdl-ex/issue
 _Note: this library is a WIP and subject to change._
 
 ```elixir
-{:ok, nodes} = Kdl.decode("node 100 key=\"value\" 10_000 /* comment */ {\n  child_1 ; child_2\n}")
+{:ok, nodes} = Kdl.decode("node 100 key=\"value\" 10_000 /* comment */ {\n    child_1\n    child_2\n}\n")
 
 IO.inspect(nodes)
 # [
@@ -83,13 +83,25 @@ The type of a KDL value. Defined as
 
 ### Functions
 
-#### Kdl.decode(binary()) :: {:ok, list(Kdl.Node.t())} | {:error, any()}
+#### Kdl.decode(binary) :: {:ok, list(Kdl.Node.t())} | {:error, any}
 
-Attempts to decode the given binary. If the binary is a valid KDL document, then `{:ok, nodes}` is returned where nodes is a list of `Kdl.Node` structs.
+Attempts to decode the given binary. If the binary is a valid KDL document, then `{:ok, nodes}` is returned where `nodes` is a list of `Kdl.Node` structs.
 
-#### Kdl.encode(list(Kdl.Node.t())) :: {:ok, binary()}
+#### Kdl.decode!(binary) :: list(Kdl.Node.t())
 
-Encodes the given KDL nodes.
+Attempts to decode the given binary. If the binary is a valid KDL document, it returns a list of `Kdl.Node` structs.
+
+Raises a `Kdl.Errors.DecodeError` if the argument is not a valid KDL-encoded document.
+
+#### Kdl.encode(list(Kdl.Node.t())) :: {:ok, binary} | {:error, binary}
+
+Attempts to encode the given argument. If the argument can be successfully encoded, then it returns `{:ok, encoded}` where `encoded` is a KDL-encoded binary.
+
+#### Kdl.encode!(list(Kdl.Node.t())) :: binary
+
+Attempts to encode the given argument. If the argument can be successfully encoded, it returns a KDL-encoded binary.
+
+Raises a `Kdl.Errors.EncodeError` if the argument cannot be encoded.
 
 ## Developing
 

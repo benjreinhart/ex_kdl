@@ -1,4 +1,12 @@
 defmodule Kdl.Errors do
+  defmodule DecodeError do
+    defexception [:message]
+  end
+
+  defmodule EncodeError do
+    defexception [:message]
+  end
+
   defmodule SyntaxError do
     @enforce_keys [:line, :message]
     defstruct [:line, :message]
