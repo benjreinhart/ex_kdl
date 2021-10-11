@@ -16,12 +16,28 @@ _Note: this library is a WIP and subject to change._
 IO.inspect(nodes)
 # [
 #   %Kdl.Node{
-#     name: "node",
-#     values: [100, 10000],
-#     properties: %{"key" => "value"},
 #     children: [
-#       %Kdl.Node{children: [], name: "child_1", properties: %{}, values: []},
-#       %Kdl.Node{children: [], name: "child_2", properties: %{}, values: []}
+#       %Kdl.Node{
+#         children: [],
+#         name: "child_1",
+#         properties: %{},
+#         type: nil,
+#         values: []
+#       },
+#       %Kdl.Node{
+#         children: [],
+#         name: "child_2",
+#         properties: %{},
+#         type: nil,
+#         values: []
+#       }
+#     ],
+#     name: "node",
+#     properties: %{"key" => %Kdl.Value{type: nil, value: "value"}},
+#     type: nil,
+#     values: [
+#       %Kdl.Value{type: nil, value: #Decimal<100>},
+#       %Kdl.Value{type: nil, value: #Decimal<10000>}
 #     ]
 #   }
 # ]
@@ -38,16 +54,30 @@ IO.puts(encoded)
 
 ### Types
 
+_Note: All numbers are parsed into [Decimals](https://hexdocs.pm/decimal/readme.html)._
+
 #### Kdl.Node.t()
 
 The type of a KDL node. Defined as
 
 ```elixir
-@type t :: %Kdl.Node{
+@type t :: Kdl.Node{
   name: binary,
-  values: list(any),
-  properties: %{binary => any},
+  type: nil | binary,
+  values: list(Kdl.Value.t()),
+  properties: %{binary => Kdl.Value.t()},
   children: list(t)
+}
+```
+
+#### Kdl.Value.t()
+
+The type of a KDL value. Defined as
+
+```elixir
+@type t :: Kdl.Value{
+  value: any,
+  type: nil | binary,
 }
 ```
 

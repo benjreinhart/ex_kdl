@@ -1,6 +1,7 @@
 defmodule Kdl.Parser do
   alias Kdl.Node
   alias Kdl.Token
+  alias Kdl.Value
 
   import Kdl.Token, only: [is_type: 2]
 
@@ -65,7 +66,7 @@ defmodule Kdl.Parser do
   defp parse_node(tokens) do
     with {:match, tokens, is_commented} <- tokens |> zero_or_one(&node_comment/1),
          {:match, tokens, _} <- tokens |> zero_or_more(&whitespace/1),
-         {:match, tokens, _} <- tokens |> zero_or_one(&type_annotation/1),
+         {:match, tokens, type} <- tokens |> zero_or_one(&type_annotation/1),
          {:match, tokens, name} <- tokens |> one(&identifier/1),
          {:match, tokens, props_and_vals} <- tokens |> zero_or_more(&node_props_and_vals/1),
          {:match, tokens, children} <- tokens |> zero_or_more(&node_children/1),
@@ -78,6 +79,7 @@ defmodule Kdl.Parser do
 
         kdl_node = %Node{
           name: name,
+          type: type,
           values: values,
           properties: properties,
           children: List.flatten(children)
@@ -125,15 +127,9 @@ defmodule Kdl.Parser do
   end
 
   defp node_value(tokens) do
-    with {:match, tokens, _} <- tokens |> zero_or_one(&type_annotation/1),
+    with {:match, tokens, type} <- tokens |> zero_or_one(&type_annotation/1),
          {:match, tokens, val} <- tokens |> one(&value/1) do
-      # Disambiguate nil as a result of a nomatch vs nil as a result of a null token.
-      # TODO: cleanup parser, this is a hack.
-      if is_nil(val) do
-        {:match, tokens, :null}
-      else
-        {:match, tokens, val}
-      end
+      {:match, tokens, Value.new(val, type)}
     end
   end
 
@@ -224,9 +220,6 @@ defmodule Kdl.Parser do
       {_key, nil} ->
         process_props_and_vals(rest, props, vals)
 
-      {key, :null} ->
-        process_props_and_vals(rest, Map.put(props, key, nil), vals)
-
       {key, value} ->
         process_props_and_vals(rest, Map.put(props, key, value), vals)
     end
@@ -238,9 +231,6 @@ defmodule Kdl.Parser do
       # In that case, we need to ignore the value.
       nil ->
         process_props_and_vals(rest, props, vals)
-
-      :null ->
-        process_props_and_vals(rest, props, [nil | vals])
 
       value ->
         process_props_and_vals(rest, props, [value | vals])

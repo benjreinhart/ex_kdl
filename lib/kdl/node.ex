@@ -1,11 +1,12 @@
 defmodule Kdl.Node do
   @enforce_keys :name
-  defstruct [:name, values: [], properties: %{}, children: []]
+  defstruct [:name, type: nil, values: [], properties: %{}, children: []]
 
   @type t :: %__MODULE__{
-    name: binary,
-    values: list(any),
-    properties: %{binary => any},
-    children: list(t)
-  }
+          name: binary,
+          type: nil | binary,
+          values: list(Kdl.Value.t()),
+          properties: %{binary => Kdl.Value.t()},
+          children: list(t)
+        }
 end

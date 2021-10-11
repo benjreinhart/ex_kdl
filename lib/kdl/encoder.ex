@@ -1,6 +1,7 @@
 defmodule Kdl.Encoder do
   alias Kdl.Chars
   alias Kdl.Node
+  alias Kdl.Value
 
   import Kdl.Chars, only: [is_initial_identifier_char: 1]
 
@@ -38,8 +39,14 @@ defmodule Kdl.Encoder do
     |> encode_terminator()
   end
 
-  defp encode_name(iodata, node) do
-    [iodata | [encode_identifier(node.name)]]
+  defp encode_name(iodata, %Node{name: name, type: type}) when is_nil(type) do
+    [iodata | encode_identifier(name)]
+  end
+
+  defp encode_name(iodata, %Node{name: name, type: type}) do
+    encoded_type_annotation = encode_type_annotation(type)
+    encoded_name = encode_identifier(name)
+    [iodata, encoded_type_annotation | encoded_name]
   end
 
   defp encode_values(iodata, node) do
@@ -88,9 +95,17 @@ defmodule Kdl.Encoder do
     [iodata | '\n']
   end
 
-  defp encode_identifier("null"), do: ~s|"null"|
+  defp encode_type_annotation(<<>>) do
+    ~s|("")|
+  end
+
+  defp encode_type_annotation(type) when is_binary(type) do
+    [?(, encode_string(type, true) | ')']
+  end
+
   defp encode_identifier("true"), do: ~s|"true"|
   defp encode_identifier("false"), do: ~s|"false"|
+  defp encode_identifier("null"), do: ~s|"null"|
 
   defp encode_identifier(<<char::utf8, _::bits>> = value)
        when is_initial_identifier_char(char) do
@@ -98,6 +113,16 @@ defmodule Kdl.Encoder do
   end
 
   defp encode_identifier(value), do: encode_string(value, false)
+
+  defp encode_value(%Value{value: value, type: type}) when is_nil(type) do
+    encode_value(value)
+  end
+
+  defp encode_value(%Value{value: value, type: type}) do
+    encoded_type_annotation = encode_type_annotation(type)
+    encoded_value = encode_value(value)
+    [encoded_type_annotation | encoded_value]
+  end
 
   defp encode_value(value) when is_binary(value), do: encode_string(value, false)
   defp encode_value(value) when is_decimal(value), do: to_string(value)
