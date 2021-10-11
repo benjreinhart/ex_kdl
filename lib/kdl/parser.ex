@@ -215,25 +215,25 @@ defmodule Kdl.Parser do
 
   defp process_props_and_vals([property | rest], props, vals) when is_tuple(property) do
     case property do
+      {key, %Value{} = value} ->
+        process_props_and_vals(rest, Map.put(props, key, value), vals)
+
       # This happens when a property was commented out with a slashdash.
       # In that case, we need to ignore the property.
       {_key, nil} ->
         process_props_and_vals(rest, props, vals)
-
-      {key, value} ->
-        process_props_and_vals(rest, Map.put(props, key, value), vals)
     end
   end
 
   defp process_props_and_vals([value | rest], props, vals) do
     case value do
+      %Value{} = value ->
+        process_props_and_vals(rest, props, [value | vals])
+
       # This happens when a value was commented out with a slashdash.
       # In that case, we need to ignore the value.
       nil ->
         process_props_and_vals(rest, props, vals)
-
-      value ->
-        process_props_and_vals(rest, props, [value | vals])
     end
   end
 
