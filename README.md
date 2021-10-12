@@ -4,6 +4,16 @@ A robust and efficient decoder and encoder for the [KDL Document Language](https
 
 ExKdl conforms to the KDL 1.0.0 [spec](https://github.com/kdl-org/kdl/blob/main/SPEC.md) and is tested against the official [test suite](https://github.com/kdl-org/kdl/tree/main/tests).
 
+## Installation
+
+ExKdl can be installed by adding `ex_kdl` to your list of dependencies in `mix.exs`:
+
+```elixir
+def deps do
+  [{:ex_kdl, "~> 0.1.0-rc1"}]
+end
+```
+
 ## Basic Usage
 
 ```elixir
@@ -39,6 +49,8 @@ iex(1)> nodes = ExKdl.decode!("node 100 key=\"value\" 10_000 /* comment */ {\n  
 iex(2)> ExKdl.encode!(nodes)
 "node 100 10000 key=\"value\" {\n    child_1\n    child_2\n}\n"
 ```
+
+Full documentation can be found at [https://hexdocs.pm/ex_kdl](https://hexdocs.pm/ex_kdl).
 
 ## Developing
 
