@@ -1,4 +1,4 @@
-defmodule Kdl.Utils.Number do
+defmodule ExKdl.Utils.Number do
   @type format :: :decimal | :binary | :octal | :hexadecimal
 
   @spec parse!(binary, format) :: Decimal.t()

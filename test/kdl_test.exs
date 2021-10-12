@@ -1,9 +1,9 @@
-defmodule Kdl.KdlTest do
+defmodule ExKdlTest do
   use ExUnit.Case, async: true
 
-  alias Kdl.Errors.{DecodeError, EncodeError}
+  alias ExKdl.Errors.{DecodeError, EncodeError}
 
-  import Kdl, only: [decode: 1, decode!: 1, encode: 1, encode!: 1]
+  import ExKdl, only: [decode: 1, decode!: 1, encode: 1, encode!: 1]
 
   this_dir = Path.dirname(__ENV__.file)
   root_dir = Path.join(this_dir, "..")
@@ -60,10 +60,10 @@ defmodule Kdl.KdlTest do
   describe "exception variants" do
     test "decode! successfully decodes a valid KDL-encoded document" do
       assert [
-               %Kdl.Node{
+               %ExKdl.Node{
                  name: "node",
                  type: nil,
-                 values: [%Kdl.Value{value: %Decimal{coef: 100}, type: nil}],
+                 values: [%ExKdl.Value{value: %Decimal{coef: 100}, type: nil}],
                  properties: %{},
                  children: []
                }
@@ -79,10 +79,10 @@ defmodule Kdl.KdlTest do
     test "encode! successfully encodes a list of KDL nodes" do
       assert "node 100\n" =
                encode!([
-                 %Kdl.Node{
+                 %ExKdl.Node{
                    name: "node",
                    type: nil,
-                   values: [%Kdl.Value{value: %Decimal{coef: 100}, type: nil}],
+                   values: [%ExKdl.Value{value: %Decimal{coef: 100}, type: nil}],
                    properties: %{},
                    children: []
                  }

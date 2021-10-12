@@ -1,9 +1,9 @@
-defmodule Kdl.Encoder do
-  alias Kdl.Chars
-  alias Kdl.Node
-  alias Kdl.Value
+defmodule ExKdl.Encoder do
+  alias ExKdl.Chars
+  alias ExKdl.Node
+  alias ExKdl.Value
 
-  import Kdl.Chars, only: [is_initial_identifier_char: 1]
+  import ExKdl.Chars, only: [is_initial_identifier_char: 1]
 
   import Decimal, only: [is_decimal: 1]
 

@@ -1,9 +1,9 @@
-defmodule Kdl.Lexer do
-  alias Kdl.Token
-  alias Kdl.Errors.SyntaxError
-  alias Kdl.Utils.Number
+defmodule ExKdl.Lexer do
+  alias ExKdl.Token
+  alias ExKdl.Errors.SyntaxError
+  alias ExKdl.Utils.Number
 
-  import Kdl.Chars,
+  import ExKdl.Chars,
     only: [
       is_bom_char: 1,
       is_newline_char: 1,

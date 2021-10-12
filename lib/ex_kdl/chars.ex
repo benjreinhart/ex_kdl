@@ -1,4 +1,4 @@
-defmodule Kdl.Chars do
+defmodule ExKdl.Chars do
   @bom_char 0xFEFF
 
   # Newline characters.

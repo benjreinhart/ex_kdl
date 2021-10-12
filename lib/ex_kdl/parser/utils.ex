@@ -1,5 +1,5 @@
-defmodule Kdl.Parser.Utils do
-  alias Kdl.Token
+defmodule ExKdl.Parser.Utils do
+  alias ExKdl.Token
 
   @type tokens_type :: list(Token.t())
   @type match_result :: :nomatch | {:match, tokens_type, any}

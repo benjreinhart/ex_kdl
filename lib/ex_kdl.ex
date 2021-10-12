@@ -1,10 +1,10 @@
-defmodule Kdl do
-  alias Kdl.Encoder
-  alias Kdl.Errors.{DecodeError, EncodeError, SyntaxError}
-  alias Kdl.Lexer
-  alias Kdl.Parser
+defmodule ExKdl do
+  alias ExKdl.Encoder
+  alias ExKdl.Errors.{DecodeError, EncodeError, SyntaxError}
+  alias ExKdl.Lexer
+  alias ExKdl.Parser
 
-  @spec decode(binary) :: {:ok, list(Kdl.Node.t())} | {:error, any}
+  @spec decode(binary) :: {:ok, list(ExKdl.Node.t())} | {:error, any}
 
   def decode(encoded) when is_binary(encoded) do
     with {:ok, tokens} <- Lexer.lex(encoded) do
@@ -16,7 +16,7 @@ defmodule Kdl do
     {:error, "Argument to decode/1 must be a KDL-encoded binary"}
   end
 
-  @spec decode!(binary) :: list(Kdl.Node.t())
+  @spec decode!(binary) :: list(ExKdl.Node.t())
 
   def decode!(encoded) do
     case decode(encoded) do
@@ -32,7 +32,7 @@ defmodule Kdl do
     end
   end
 
-  @spec encode(list(Kdl.Node.t())) :: {:ok, binary} | {:error, binary}
+  @spec encode(list(ExKdl.Node.t())) :: {:ok, binary} | {:error, binary}
 
   def encode(nodes) when is_list(nodes) do
     Encoder.encode(nodes)
@@ -42,7 +42,7 @@ defmodule Kdl do
     {:error, "Argument to encode/1 must be a list of KDL nodes"}
   end
 
-  @spec encode!([Kdl.Node.t()]) :: binary
+  @spec encode!([ExKdl.Node.t()]) :: binary
   def encode!(decoded) do
     case encode(decoded) do
       {:ok, encoded} ->

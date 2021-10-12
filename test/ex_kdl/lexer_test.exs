@@ -1,9 +1,9 @@
-defmodule Kdl.LexerTest do
+defmodule ExKdl.LexerTest do
   use ExUnit.Case, async: true
 
-  alias Kdl.Lexer
+  alias ExKdl.Lexer
 
-  alias Kdl.Errors.SyntaxError
+  alias ExKdl.Errors.SyntaxError
 
   defp lex_at(src, at) do
     {:ok, tokens} = Lexer.lex(src)

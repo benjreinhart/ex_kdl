@@ -1,4 +1,4 @@
-defmodule Kdl.Errors do
+defmodule ExKdl.Errors do
   defmodule DecodeError do
     defexception [:message]
   end

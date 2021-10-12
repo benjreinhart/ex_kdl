@@ -1,11 +1,11 @@
-defmodule Kdl.Parser do
-  alias Kdl.Node
-  alias Kdl.Token
-  alias Kdl.Value
+defmodule ExKdl.Parser do
+  alias ExKdl.Node
+  alias ExKdl.Token
+  alias ExKdl.Value
 
-  import Kdl.Token, only: [is_type: 2]
+  import ExKdl.Token, only: [is_type: 2]
 
-  import Kdl.Parser.Utils
+  import ExKdl.Parser.Utils
 
   defguardp is_whitespace(token)
             when is_type(token, :whitespace) or

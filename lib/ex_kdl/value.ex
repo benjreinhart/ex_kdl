@@ -1,4 +1,4 @@
-defmodule Kdl.Value do
+defmodule ExKdl.Value do
   @enforce_keys :value
   defstruct [:value, type: nil]
 
