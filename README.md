@@ -10,7 +10,7 @@ ExKdl can be installed by adding `ex_kdl` to your list of dependencies in `mix.e
 
 ```elixir
 def deps do
-  [{:ex_kdl, "~> 0.1.0-rc1"}]
+  [{:ex_kdl, "~> 0.1.0-rc2"}]
 end
 ```
 

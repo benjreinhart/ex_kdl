@@ -1,7 +1,7 @@
 defmodule ExKdl.MixProject do
   use Mix.Project
 
-  @version "0.1.0-rc1"
+  @version "0.1.0-rc2"
   @source_url "https://github.com/benjreinhart/ex_kdl"
 
   def project do
