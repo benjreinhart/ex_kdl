@@ -1,4 +1,6 @@
 defmodule ExKdl.Utils.Number do
+  @moduledoc false
+
   @type format :: :decimal | :binary | :octal | :hexadecimal
 
   @spec parse!(binary, format) :: Decimal.t()

@@ -1,4 +1,6 @@
 defmodule ExKdl.Encoder do
+  @moduledoc false
+
   alias ExKdl.Chars
   alias ExKdl.Node
   alias ExKdl.Value

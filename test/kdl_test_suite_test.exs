@@ -1,9 +1,7 @@
-defmodule ExKdlTest do
+defmodule ExKdl.KdlTestSuite do
   use ExUnit.Case, async: true
 
-  alias ExKdl.Errors.{DecodeError, EncodeError}
-
-  import ExKdl, only: [decode: 1, decode!: 1, encode: 1, encode!: 1]
+  import ExKdl, only: [decode: 1, encode: 1]
 
   this_dir = Path.dirname(__ENV__.file)
   root_dir = Path.join(this_dir, "..")
@@ -53,45 +51,6 @@ defmodule ExKdlTest do
       @tag tag
       test test_name do
         assert {:error, _message} = decode(unquote(file_contents))
-      end
-    end
-  end
-
-  describe "exception variants" do
-    test "decode! successfully decodes a valid KDL-encoded document" do
-      assert [
-               %ExKdl.Node{
-                 name: "node",
-                 type: nil,
-                 values: [%ExKdl.Value{value: %Decimal{coef: 100}, type: nil}],
-                 properties: %{},
-                 children: []
-               }
-             ] = decode!("node 100")
-    end
-
-    test "decode! raises DecodeError on failure" do
-      assert_raise DecodeError, "Line 1: invalid number literal", fn ->
-        decode!("node 1.")
-      end
-    end
-
-    test "encode! successfully encodes a list of KDL nodes" do
-      assert "node 100\n" =
-               encode!([
-                 %ExKdl.Node{
-                   name: "node",
-                   type: nil,
-                   values: [%ExKdl.Value{value: %Decimal{coef: 100}, type: nil}],
-                   properties: %{},
-                   children: []
-                 }
-               ])
-    end
-
-    test "encode! raises EncodeError on failure" do
-      assert_raise EncodeError, "Argument to encode/1 must be a list of KDL nodes", fn ->
-        encode!(1)
       end
     end
   end

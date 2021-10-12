@@ -1,4 +1,6 @@
 defmodule ExKdl.Parser.Utils do
+  @moduledoc false
+
   alias ExKdl.Token
 
   @type tokens_type :: list(Token.t())

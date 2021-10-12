@@ -54,7 +54,13 @@ Or, if already cloned, initialize the submodule with:
 git submodule update --init
 ```
 
-## Running tests
+### Dependencies
+
+```
+mix deps.get
+```
+
+### Running tests
 
 ```
 mix test

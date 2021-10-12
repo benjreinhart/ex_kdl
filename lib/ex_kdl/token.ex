@@ -1,4 +1,6 @@
 defmodule ExKdl.Token do
+  @moduledoc false
+
   @type t :: {:eof} | {atom(), non_neg_integer()} | {atom(), non_neg_integer(), any()}
 
   defguard is_type(token, type) when elem(token, 0) == type

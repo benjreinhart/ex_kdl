@@ -1,4 +1,6 @@
 defmodule ExKdl.Parser do
+  @moduledoc false
+
   alias ExKdl.Node
   alias ExKdl.Token
   alias ExKdl.Value

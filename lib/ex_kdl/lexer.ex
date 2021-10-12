@@ -1,4 +1,6 @@
 defmodule ExKdl.Lexer do
+  @moduledoc false
+
   alias ExKdl.Token
   alias ExKdl.Errors.SyntaxError
   alias ExKdl.Utils.Number
