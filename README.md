@@ -1,5 +1,7 @@
 # ExKdl
 
+![Elixir tests](https://github.com/benjreinhart/ex_kdl/actions/workflows/elixir.yml/badge.svg)
+
 A robust and efficient decoder and encoder for the [KDL Document Language](https://kdl.dev).
 
 ExKdl conforms to the KDL 1.0.0 [spec](https://github.com/kdl-org/kdl/blob/main/SPEC.md) and is tested against the official [test suite](https://github.com/kdl-org/kdl/tree/main/tests).
