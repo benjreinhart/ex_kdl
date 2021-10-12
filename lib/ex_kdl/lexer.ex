@@ -1,8 +1,8 @@
 defmodule ExKdl.Lexer do
   @moduledoc false
 
+  alias ExKdl.DecodeError
   alias ExKdl.Token
-  alias ExKdl.Errors.SyntaxError
   alias ExKdl.Utils.Number
 
   import ExKdl.Chars,
@@ -20,7 +20,7 @@ defmodule ExKdl.Lexer do
       is_initial_identifier_char: 1
     ]
 
-  @spec lex(binary()) :: {:ok, list(term())} | {:error, term()}
+  @spec lex(binary) :: {:ok, [Token.t()]} | {:error, DecodeError.t()}
 
   def lex(encoded) when is_binary(encoded) do
     lex(encoded, 1, [])
@@ -72,7 +72,7 @@ defmodule ExKdl.Lexer do
 
     case lex_multiline_comment(src, ln, 0) do
       {:error, message} ->
-        {:error, SyntaxError.new(ln, message)}
+        {:error, %DecodeError{message: message, line: ln}}
 
       {src, ln} ->
         token = Token.new(:multiline_comment, line_started_on)
@@ -115,7 +115,7 @@ defmodule ExKdl.Lexer do
         lex(src, ln, [token | tks])
 
       {:error, message} ->
-        {:error, SyntaxError.new(ln, message)}
+        {:error, %DecodeError{message: message, line: ln}}
     end
   end
 
@@ -131,7 +131,7 @@ defmodule ExKdl.Lexer do
             lex(src, ln, [token | tks])
 
           {:error, message} ->
-            {:error, SyntaxError.new(ln, message)}
+            {:error, %DecodeError{message: message, line: ln}}
         end
 
       _ ->
@@ -156,7 +156,7 @@ defmodule ExKdl.Lexer do
   end
 
   defp lex(src, ln, _tks) do
-    {:error, SyntaxError.new(ln, "unrecognized character '#{String.first(src)}'")}
+    {:error, %DecodeError{message: "unrecognized character '#{String.first(src)}'", line: ln}}
   end
 
   defp lex_identifier(src, ln, tks) do
@@ -193,7 +193,7 @@ defmodule ExKdl.Lexer do
   defp lex_number(src, iodata, ln, tks) do
     case lex_number(src, iodata) do
       {:error, message} ->
-        {:error, SyntaxError.new(ln, message)}
+        {:error, %DecodeError{message: message, line: ln}}
 
       {src, number} ->
         token = Token.new(:number, ln, number)
@@ -209,7 +209,7 @@ defmodule ExKdl.Lexer do
         {src, Number.parse!(number_str, :binary)}
 
       _ ->
-        {:error, "invalid number literal"}
+        {:error, "invalid numeric literal"}
     end
   end
 
@@ -221,7 +221,7 @@ defmodule ExKdl.Lexer do
         {src, Number.parse!(number_str, :octal)}
 
       _ ->
-        {:error, "invalid number literal"}
+        {:error, "invalid numeric literal"}
     end
   end
 
@@ -233,7 +233,7 @@ defmodule ExKdl.Lexer do
         {src, Number.parse!(number_str, :hexadecimal)}
 
       _ ->
-        {:error, "invalid number literal"}
+        {:error, "invalid numeric literal"}
     end
   end
 
@@ -430,7 +430,7 @@ defmodule ExKdl.Lexer do
   # we return an error indicating the syntax is invalid.
   defp parse_decimal(<<?., c::utf8, _::binary>>, _iodata, false, _exp)
        when not is_decimal_char(c) do
-    {:error, "invalid number literal"}
+    {:error, "invalid numeric literal"}
   end
 
   # This matches when a dot is immediately followed by EOF.
@@ -440,7 +440,7 @@ defmodule ExKdl.Lexer do
   # In this case, the numeric literal is incomplete and is
   # therefore an error.
   defp parse_decimal(<<?.>>, _iodata, _dot, _exp) do
-    {:error, "invalid number literal"}
+    {:error, "invalid numeric literal"}
   end
 
   # At this point, we know that we:
@@ -500,7 +500,7 @@ defmodule ExKdl.Lexer do
   # This is an invalid number literal and so we return an error indicating the
   # syntax is malformed.
   defp parse_decimal(<<c::utf8, _::binary>>, _iodata, _dot, false) when is_exp_char(c) do
-    {:error, "invalid number literal"}
+    {:error, "invalid numeric literal"}
   end
 
   defp parse_decimal(src, iodata, _dot, _exp) do

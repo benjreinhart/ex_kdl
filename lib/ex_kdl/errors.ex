@@ -1,19 +1,19 @@
-defmodule ExKdl.Errors do
-  defmodule DecodeError do
-    defexception [:message]
+defmodule ExKdl.DecodeError do
+  @type t :: %__MODULE__{message: String.t(), line: non_neg_integer}
+
+  defexception [:message, line: nil]
+
+  def message(%{message: message, line: line}) when is_integer(line) do
+    "Line #{line}: #{message}"
   end
 
-  defmodule EncodeError do
-    defexception [:message]
+  def message(%{message: message}) do
+    message
   end
+end
 
-  defmodule SyntaxError do
-    @enforce_keys [:line, :message]
-    defstruct [:line, :message]
+defmodule ExKdl.EncodeError do
+  @type t :: %__MODULE__{message: String.t()}
 
-    @spec new(integer, binary) :: %__MODULE__{line: integer, message: binary}
-    def new(line, message) when is_integer(line) and is_binary(message) do
-      %__MODULE__{line: line, message: message}
-    end
-  end
+  defexception [:message]
 end

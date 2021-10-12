@@ -3,10 +3,7 @@ defmodule ExKdl do
   A robust and efficient decoder and encoder for the KDL Document Language.
   """
 
-  alias ExKdl.Encoder
-  alias ExKdl.Errors.{DecodeError, EncodeError, SyntaxError}
-  alias ExKdl.Lexer
-  alias ExKdl.Parser
+  alias ExKdl.{DecodeError, EncodeError, Encoder, Lexer, Node, Parser}
 
   @doc """
   Decodes a KDL-encoded document from the `input` binary.
@@ -27,15 +24,12 @@ defmodule ExKdl do
 
       iex> ExKdl.decode(~s|node "unterminated string|)
       {:error,
-       %ExKdl.Errors.SyntaxError{
+       %ExKdl.DecodeError{
          line: 1,
          message: "unterminated string meets end of file"
        }}
-
-      iex> ExKdl.decode([])
-      {:error, "Argument to decode/1 must be a KDL-encoded binary"}
   """
-  @spec decode(binary) :: {:ok, list(ExKdl.Node.t())} | {:error, any}
+  @spec decode(binary) :: {:ok, [Node.t()]} | {:error, DecodeError.t()}
   def decode(input) when is_binary(input) do
     with {:ok, tokens} <- Lexer.lex(input) do
       Parser.parse(tokens)
@@ -43,7 +37,7 @@ defmodule ExKdl do
   end
 
   def decode(_) do
-    {:error, "Argument to decode/1 must be a KDL-encoded binary"}
+    {:error, %DecodeError{message: "Argument to decode/1 must be a KDL-encoded binary"}}
   end
 
   @doc """
@@ -65,20 +59,16 @@ defmodule ExKdl do
       ]
 
       iex> ExKdl.decode!(~s|node "unterminated string|)
-      ** (ExKdl.Errors.DecodeError) Line 1: unterminated string meets end of file
+      ** (ExKdl.DecodeError) Line 1: unterminated string meets end of file
   """
-  @spec decode!(binary) :: list(ExKdl.Node.t())
+  @spec decode!(binary) :: [Node.t()]
   def decode!(input) do
     case decode(input) do
       {:ok, nodes} ->
         nodes
 
-      # TODO: proper and consistent error handling
-      {:error, %SyntaxError{message: message, line: line}} ->
-        raise DecodeError, message: "Line #{line}: #{message}"
-
-      {:error, message} ->
-        raise DecodeError, message: message
+      {:error, error} ->
+        raise error
     end
   end
 
@@ -91,15 +81,15 @@ defmodule ExKdl do
       {:ok, "node 10\\n"}
 
       iex> ExKdl.encode(nil)
-      {:error, "Argument to encode/1 must be a list of KDL nodes"}
+      {:error, %ExKdl.EncodeError{message: "Argument to encode/1 must be a list of KDL nodes"}}
   """
-  @spec encode(list(ExKdl.Node.t())) :: {:ok, binary} | {:error, binary}
+  @spec encode([Node.t()]) :: {:ok, binary} | {:error, EncodeError.t()}
   def encode(input) when is_list(input) do
     Encoder.encode(input)
   end
 
   def encode(_) do
-    {:error, "Argument to encode/1 must be a list of KDL nodes"}
+    {:error, %EncodeError{message: "Argument to encode/1 must be a list of KDL nodes"}}
   end
 
   @doc """
@@ -113,16 +103,16 @@ defmodule ExKdl do
       "node 10\\n"
 
       iex> ExKdl.encode!(nil)
-      ** (ExKdl.Errors.EncodeError) Argument to encode/1 must be a list of KDL nodes
+      ** (ExKdl.EncodeError) Argument to encode/1 must be a list of KDL nodes
   """
-  @spec encode!(list(ExKdl.Node.t())) :: binary
+  @spec encode!([Node.t()]) :: binary
   def encode!(input) do
     case encode(input) do
       {:ok, encoded} ->
         encoded
 
-      {:error, message} ->
-        raise EncodeError, message: message
+      {:error, error} ->
+        raise error
     end
   end
 end

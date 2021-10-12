@@ -1,6 +1,7 @@
 defmodule ExKdl.Parser do
   @moduledoc false
 
+  alias ExKdl.DecodeError
   alias ExKdl.Node
   alias ExKdl.Token
   alias ExKdl.Value
@@ -28,7 +29,7 @@ defmodule ExKdl.Parser do
   defguardp is_identifier(token)
             when is_type(token, :bare_identifier) or is_type(token, :string)
 
-  @spec parse(list(tuple)) :: {:ok, list(Node.t())} | {:error, binary()}
+  @spec parse([tuple]) :: {:ok, [Node.t()]} | {:error, DecodeError.t()}
 
   def parse(tokens) do
     case parse_nodes(tokens) do
@@ -39,7 +40,7 @@ defmodule ExKdl.Parser do
         {:ok, nodes}
 
       {:match, _, _} ->
-        {:error, "failed to parse KDL document"}
+        {:error, %DecodeError{message: "failed to parse KDL document"}}
     end
   end
 
