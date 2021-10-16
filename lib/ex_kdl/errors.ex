@@ -1,7 +1,7 @@
 defmodule ExKdl.DecodeError do
   @type t :: %__MODULE__{message: String.t(), line: non_neg_integer}
 
-  defexception [:message, line: nil]
+  defexception [:message, line: nil, byte_offset: nil]
 
   def message(%{message: message, line: line}) when is_integer(line) do
     "Line #{line}: #{message}"

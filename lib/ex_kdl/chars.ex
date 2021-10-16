@@ -16,6 +16,11 @@ defmodule ExKdl.Chars do
     0x2029
   ]
 
+  @spec newline_chars :: [non_neg_integer]
+  def newline_chars() do
+    @newline_chars
+  end
+
   # Whitespace characters.
   #
   #     https://github.com/kdl-org/kdl/blob/1.0.0/SPEC.md#whitespace
@@ -40,6 +45,11 @@ defmodule ExKdl.Chars do
     0x205F,
     0x3000
   ]
+
+  @spec whitespace_chars :: [non_neg_integer]
+  def whitespace_chars() do
+    @whitespace_chars
+  end
 
   # Non-identifier characters.
   #
